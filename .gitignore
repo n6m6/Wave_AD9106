@@ -1,0 +1,38 @@
+# Vivado generated/runtime files
+.Xil/
+*.jou
+*.log
+*.pb
+*.wdb
+*.wcfg
+*.str
+*.zip
+
+# Vivado generated project directories
+*.cache/
+*.gen/
+*.hw/
+*.ioplanning/
+*.ip_user_files/
+*.runs/
+*.sim/
+
+# Simulator work directories
+xsim.dir/
+.jou
+.log
+
+# Large implementation outputs
+*.bit
+*.bin
+*.ltx
+*.dcp
+*.rpt
+*.rpx
+*.vdi
+*.vds
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,309 @@
+{
+  "design": {
+    "design_info": {
+      "boundary_crc": "0x2AA07511FF1B0B11",
+      "device": "xc7a35tfgg484-2",
+      "gen_directory": "../../../../AD9106_demo.gen/sources_1/bd/design_1",
+      "name": "design_1",
+      "rev_ctrl_bd_flag": "RevCtrlBdOff",
+      "synth_flow_mode": "Hierarchical",
+      "tool_version": "2023.2",
+      "validated": "true"
+    },
+    "design_tree": {
+      "AD9106_0": "",
+      "clk_wiz": ""
+    },
+    "ports": {
+      "ad9106_sdo_0": {
+        "direction": "I"
+      },
+      "ad9106_sclk_0": {
+        "direction": "O"
+      },
+      "ad9106_sdio_0": {
+        "direction": "O"
+      },
+      "ad9106_cs_n_0": {
+        "direction": "O"
+      },
+      "ad9106_reset_0": {
+        "type": "rst",
+        "direction": "O",
+        "parameters": {
+          "INSERT_VIP": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "POLARITY": {
+            "value": "ACTIVE_LOW",
+            "value_src": "default"
+          }
+        }
+      },
+      "ad9106_trigger_0": {
+        "direction": "O"
+      },
+      "ad9106_clken_0": {
+        "direction": "O"
+      },
+      "init_done_0": {
+        "direction": "O"
+      },
+      "init_busy_0": {
+        "direction": "O"
+      },
+      "clk_in": {
+        "type": "clk",
+        "direction": "I",
+        "parameters": {
+          "CLK_DOMAIN": {
+            "value": "design_1_clk_in1_0"
+          },
+          "FREQ_HZ": {
+            "value": "50000000"
+          },
+          "FREQ_TOLERANCE_HZ": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "INSERT_VIP": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "PHASE": {
+            "value": "0.0",
+            "value_src": "default"
+          }
+        }
+      },
+      "resetn": {
+        "type": "rst",
+        "direction": "I",
+        "parameters": {
+          "INSERT_VIP": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "POLARITY": {
+            "value": "ACTIVE_LOW",
+            "value_src": "default"
+          }
+        }
+      }
+    },
+    "components": {
+      "AD9106_0": {
+        "vlnv": "xilinx.com:module_ref:AD9106:1.0",
+        "ip_revision": "1",
+        "xci_name": "design_1_AD9106_0_0",
+        "xci_path": "ip\\design_1_AD9106_0_0\\design_1_AD9106_0_0.xci",
+        "inst_hier_path": "AD9106_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "AD9106",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "ASSOCIATED_RESET": {
+                "value": "resetn",
+                "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "/clk_wiz_clk_out1",
+                "value_src": "ip_prop"
+              }
+            }
+          },
+          "resetn": {
+            "type": "rst",
+            "direction": "I",
+            "parameters": {
+              "POLARITY": {
+                "value": "ACTIVE_LOW",
+                "value_src": "constant"
+              }
+            }
+          },
+          "ad9106_sclk": {
+            "direction": "O"
+          },
+          "ad9106_sdio": {
+            "direction": "O"
+          },
+          "ad9106_sdo": {
+            "direction": "I"
+          },
+          "ad9106_cs_n": {
+            "direction": "O"
+          },
+          "ad9106_reset": {
+            "type": "rst",
+            "direction": "O"
+          },
+          "ad9106_trigger": {
+            "direction": "O"
+          },
+          "ad9106_clken": {
+            "direction": "O"
+          },
+          "init_done": {
+            "direction": "O"
+          },
+          "init_busy": {
+            "direction": "O"
+          }
+        }
+      },
+      "clk_wiz": {
+        "vlnv": "xilinx.com:ip:clk_wiz:6.0",
+        "ip_revision": "13",
+        "xci_name": "design_1_clk_wiz_0",
+        "xci_path": "ip\\design_1_clk_wiz_0\\design_1_clk_wiz_0.xci",
+        "inst_hier_path": "clk_wiz",
+        "parameters": {
+          "CLKIN1_JITTER_PS": {
+            "value": "200.0"
+          },
+          "CLKOUT1_JITTER": {
+            "value": "162.035"
+          },
+          "CLKOUT1_PHASE_ERROR": {
+            "value": "164.985"
+          },
+          "CLKOUT1_REQUESTED_OUT_FREQ": {
+            "value": "100.000"
+          },
+          "CLKOUT2_JITTER": {
+            "value": "130.958"
+          },
+          "CLKOUT2_PHASE_ERROR": {
+            "value": "98.575"
+          },
+          "CLKOUT2_USED": {
+            "value": "false"
+          },
+          "MMCM_CLKFBOUT_MULT_F": {
+            "value": "20.000"
+          },
+          "MMCM_CLKIN1_PERIOD": {
+            "value": "20.000"
+          },
+          "MMCM_CLKIN2_PERIOD": {
+            "value": "10.0"
+          },
+          "MMCM_CLKOUT0_DIVIDE_F": {
+            "value": "10.000"
+          },
+          "MMCM_CLKOUT1_DIVIDE": {
+            "value": "1"
+          },
+          "NUM_OUT_CLKS": {
+            "value": "1"
+          },
+          "PRIM_IN_FREQ": {
+            "value": "50.000"
+          },
+          "RESET_PORT": {
+            "value": "resetn"
+          },
+          "RESET_TYPE": {
+            "value": "ACTIVE_LOW"
+          }
+        }
+      }
+    },
+    "nets": {
+      "AD9106_0_ad9106_clken": {
+        "ports": [
+          "AD9106_0/ad9106_clken",
+          "ad9106_clken_0"
+        ]
+      },
+      "AD9106_0_ad9106_cs_n": {
+        "ports": [
+          "AD9106_0/ad9106_cs_n",
+          "ad9106_cs_n_0"
+        ]
+      },
+      "AD9106_0_ad9106_reset": {
+        "ports": [
+          "AD9106_0/ad9106_reset",
+          "ad9106_reset_0"
+        ]
+      },
+      "AD9106_0_ad9106_sclk": {
+        "ports": [
+          "AD9106_0/ad9106_sclk",
+          "ad9106_sclk_0"
+        ]
+      },
+      "AD9106_0_ad9106_sdio": {
+        "ports": [
+          "AD9106_0/ad9106_sdio",
+          "ad9106_sdio_0"
+        ]
+      },
+      "AD9106_0_ad9106_trigger": {
+        "ports": [
+          "AD9106_0/ad9106_trigger",
+          "ad9106_trigger_0"
+        ]
+      },
+      "AD9106_0_init_busy": {
+        "ports": [
+          "AD9106_0/init_busy",
+          "init_busy_0"
+        ]
+      },
+      "AD9106_0_init_done": {
+        "ports": [
+          "AD9106_0/init_done",
+          "init_done_0"
+        ]
+      },
+      "ad9106_sdo_0_1": {
+        "ports": [
+          "ad9106_sdo_0",
+          "AD9106_0/ad9106_sdo"
+        ]
+      },
+      "clk_in_1": {
+        "ports": [
+          "clk_in",
+          "clk_wiz/clk_in1"
+        ]
+      },
+      "clk_wiz_clk_out1": {
+        "ports": [
+          "clk_wiz/clk_out1",
+          "AD9106_0/clk"
+        ]
+      },
+      "clk_wiz_locked": {
+        "ports": [
+          "clk_wiz/locked",
+          "AD9106_0/resetn"
+        ]
+      },
+      "resetn_1": {
+        "ports": [
+          "resetn",
+          "clk_wiz/resetn"
+        ]
+      }
+    }
+  }
+}
