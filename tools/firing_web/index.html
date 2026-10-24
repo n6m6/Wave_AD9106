@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AD9106 · 四路波形控制台</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark">A</span><div><strong>AD9106 控制台</strong><small>四路 Vin / Vgate 波形配置</small></div></div>
+    <div class="header-note">23 类模板 / 静态扫描 / 方波 / 正弦 <span class="dot"></span> 四路一次提交</div>
+  </header>
+  <main>
+    <section class="connection-panel">
+      <div class="connection-title"><span class="kicker">01 · 设备连接</span><h1>选择并检测串口</h1><p>检测帧只确认本工程的指令解析器在线，不改动 DAC 配置。</p></div>
+      <div class="connection-controls">
+        <label class="input-group port-field">可用串口<select id="portSelect"><option value="">正在扫描…</option></select></label>
+        <button id="refreshPorts" class="button muted" type="button">刷新列表</button>
+        <button id="probePort" class="button outline" type="button">检测设备</button>
+        <button id="readRegisters" type="button">回读芯片寄存器</button>
+        <div id="portState" class="port-state disconnected"><span class="state-light"></span><span>未连接</span></div>
+      </div>
+      <p id="serialHint" class="hint"></p>
+    </section>
+
+    <section class="workbench">
+      <div class="edit-pane">
+        <div class="section-head"><div><span class="kicker">02 · 场景配置</span><h2>按通道设置参数</h2></div><button id="syncPairs" class="text-button" type="button">同步两组 Vin/Vgate 配对</button></div>
+        <div class="config-actions">
+          <button id="staticPair34" class="button outline" type="button">DAC3 Vin / DAC4 Vgate 静态扫描</button>
+          <button id="importScene" class="button muted" type="button">导入 JSON</button>
+          <button id="saveScene" class="button muted" type="button">保存到工程</button>
+          <button id="downloadScene" class="button muted" type="button">下载 JSON</button>
+          <input id="sceneFile" type="file" accept=".json,application/json" hidden>
+        </div>
+        <div id="channelEditors" class="channel-editors"></div>
+      </div>
+
+      <div class="preview-pane">
+        <div class="section-head"><div><span class="kicker">03 · 编译预览</span><h2>四路输出波形预览</h2></div><span id="previewFlag" class="pill waiting">等待编译</span></div>
+        <div id="previewError" class="preview-error" hidden></div>
+        <div class="stat-grid">
+          <div class="stat"><span>时窗内部频率</span><strong id="frameFreq">—</strong></div>
+          <div class="stat"><span>共享 SRAM</span><strong id="memoryUsed">—</strong></div>
+          <div class="stat"><span>HOLD / 频率误差</span><strong id="timingValue">—</strong></div>
+        </div>
+        <div id="charts" class="charts"></div>
+        <p class="preview-caption">波形依据已编译的 DAC 码绘制，纵轴为名义电压；图文模板中未明确的时序为近似值。支持保留细节的波形可降低至 1 kHz，末尾零码等待由芯片计时。超出能力时拒绝发送，不自动更改其他通道。编译失败时显示单路模板预览。</p>
+      </div>
+    </section>
+
+    <section class="send-panel">
+      <div class="send-settings">
+        <label>每组两遍波形结束后的间隔 / 秒 <input id="intervalSeconds" type="number" min="0.01" max="3600" step="0.01" value="1"></label>
+        <label>点击发送后触发组数 <input id="repeatCount" type="number" min="1" max="1000" step="1" value="1"></label>
+        <p>当前每次触发连续播放两遍预览单元；组间等待设定时间。组数为 1 时只触发一次。模式 25/26 支持 1 kHz，需下载配套新固件。</p>
+      </div>
+      <div><span class="kicker">04 · 一次发送</span><h2>写入四路并同步启动</h2><p>上传期间保持四路停止；每帧收到回包后继续，最后一次提交才启动输出。</p></div>
+      <div class="send-actions"><button id="abortOutput" class="button danger" type="button">停止输出</button><button id="sendScene" class="button primary" type="button">发送四路配置</button></div>
+      <div class="progress-wrap"><progress id="uploadProgress" value="0" max="100"></progress><span id="progressText">尚未发送</span></div>
+      <div id="activityLog" class="activity-log" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+</body>
+</html>

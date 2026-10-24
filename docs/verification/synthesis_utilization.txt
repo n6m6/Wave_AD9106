@@ -1,0 +1,42 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (win64) Build 4029153 Fri Oct 13 20:14:34 MDT 2023
+| Date         : Tue Oct 20 14:00:32 2026
+| Host         : Nexora running 64-bit major release  (build 9200)
+| Command      : report_utilization -hierarchical -file {E:/vivado project/AD9106/.uart_sim/top_synth/utilization.rpt}
+| Design       : design_1_wrapper
+| Device       : xc7a35tfgg484-2
+| Speed File   : -2
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++-------------------------+--------------------------------+------------+------------+---------+------+-----+--------+--------+------------+
+|         Instance        |             Module             | Total LUTs | Logic LUTs | LUTRAMs | SRLs | FFs | RAMB36 | RAMB18 | DSP Blocks |
++-------------------------+--------------------------------+------------+------------+---------+------+-----+--------+--------+------------+
+| design_1_wrapper        |                          (top) |        903 |        903 |       0 |    0 | 599 |      0 |      0 |          0 |
+|   (design_1_wrapper)    |                          (top) |          0 |          0 |       0 |    0 |   0 |      0 |      0 |          0 |
+|   design_1_i            |                       design_1 |        903 |        903 |       0 |    0 | 599 |      0 |      0 |          0 |
+|     AD9106_0            |            design_1_AD9106_0_0 |        323 |        323 |       0 |    0 | 206 |      0 |      0 |          0 |
+|       inst              |                         AD9106 |        323 |        323 |       0 |    0 | 206 |      0 |      0 |          0 |
+|         (inst)          |                         AD9106 |        245 |        245 |       0 |    0 | 134 |      0 |      0 |          0 |
+|         spi_writer_i    |              ad9106_spi_writer |         78 |         78 |       0 |    0 |  72 |      0 |      0 |          0 |
+|     ad9106_cmd_parser_0 | design_1_ad9106_cmd_parser_0_0 |        383 |        383 |       0 |    0 | 241 |      0 |      0 |          0 |
+|       inst              |              ad9106_cmd_parser |        383 |        383 |       0 |    0 | 241 |      0 |      0 |          0 |
+|     clk_wiz             |             design_1_clk_wiz_0 |          2 |          2 |       0 |    0 |   0 |      0 |      0 |          0 |
+|       inst              |     design_1_clk_wiz_0_clk_wiz |          2 |          2 |       0 |    0 |   0 |      0 |      0 |          0 |
+|     uart_cmd_rx_0       |       design_1_uart_cmd_rx_0_0 |        113 |        113 |       0 |    0 |  58 |      0 |      0 |          0 |
+|       inst              |                    uart_cmd_rx |        113 |        113 |       0 |    0 |  58 |      0 |      0 |          0 |
+|     uart_cmd_tx_0       |       design_1_uart_cmd_tx_0_0 |         82 |         82 |       0 |    0 |  94 |      0 |      0 |          0 |
+|       inst              |                    uart_cmd_tx |         82 |         82 |       0 |    0 |  94 |      0 |      0 |          0 |
++-------------------------+--------------------------------+------------+------------+---------+------+-----+--------+--------+------------+
+
+

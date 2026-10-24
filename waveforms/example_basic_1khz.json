@@ -1,0 +1,10 @@
+{
+  "dac_clock_hz": 148500000, "full_scale_v": 10, "zero_code_v": 0,
+  "repeat_count": 1, "interval_s": 1,
+  "channels": [
+    {"channel": 1, "topology": 6, "mode": 25, "signal": "vin", "component": "square", "frequency_hz": 1000, "amplitude_v": 2, "offset_v": 2, "phase_deg": 0, "parameters": {"duty_percent": 50}},
+    {"channel": 2, "topology": 6, "mode": 26, "signal": "gate", "component": "sine", "frequency_hz": 1000, "amplitude_v": 2, "offset_v": 0, "phase_deg": 0},
+    {"channel": 3, "topology": 6, "mode": 25, "signal": "vin", "component": "square", "frequency_hz": 1000, "amplitude_v": 1, "offset_v": 0, "phase_deg": 0, "parameters": {"duty_percent": 50}},
+    {"channel": 4, "topology": 6, "mode": 26, "signal": "gate", "component": "sine", "frequency_hz": 1000, "amplitude_v": 3, "offset_v": 0, "phase_deg": 90}
+  ]
+}

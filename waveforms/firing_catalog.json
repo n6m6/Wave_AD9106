@@ -1,0 +1,3903 @@
+{
+  "source": "AD9106_demo.srcs\\sources_1\\new\\各拓扑结构的23种发放特性展示_分享版_图片内嵌.html",
+  "source_sha256": "b48a3c7347ebe2eb7d0a5bdf9ba8e3c64f692d1e0d357d5baa66140fa0ff9a1a",
+  "fidelity": "Graph/text-derived parameterized templates; original CSV/PWL timing is not included.",
+  "topologies": [
+    3,
+    5,
+    6,
+    7
+  ],
+  "modes": [
+    {
+      "topology": 3,
+      "mode": 1,
+      "name": "Tonic spiking",
+      "source_anchor": "t3m1",
+      "title": "01 Tonic spiking — 持续发放 — 做到",
+      "description": "Vin方波重复两次，工作窗口内Gate恒定；重复发放不由逐次Gate触发。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular01",
+          "label": "主例 03_regular01",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 2,
+      "name": "Phasic spiking",
+      "source_anchor": "t3m2",
+      "title": "02 Phasic spiking — 相位性单发 — 做到",
+      "description": "Gate恒压，每次输入起始单发。③低Gate下单发后电流约0.058 mA，未把它解释成长期低阻锁存。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular02",
+          "label": "主例 03_regular02",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～1 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 3,
+      "name": "Tonic bursting",
+      "source_anchor": "t3m3",
+      "title": "03 Tonic bursting — 持续簇发 — 做到*",
+      "description": "每个Vin长窗口内，Gate为三段22 μs长方波，每段自然产生多个脉冲；簇节律由Gate规定。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "three_gate_windows"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular03",
+          "label": "主例 03_regular03",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 4,
+      "name": "Phasic bursting",
+      "source_anchor": "t3m4",
+      "title": "04 Phasic bursting — 相位性簇发 — 做到*",
+      "description": "仅输入开始时使能22 μs，之后Gate降为0；长方波形成起始簇。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "onset_gate_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular04",
+          "label": "主例 03_regular04",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 5,
+      "name": "Mixed mode",
+      "source_anchor": "t3m5",
+      "title": "05 Mixed mode — 混合模式 — 做到*",
+      "description": "Gate直线下降，ISI逐渐增大。前70 μs下降后保持低值，呈快到慢变化，未插入归零边沿。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "ramp_or_step_hold"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular05_0",
+          "label": "主例 03_regular05_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～3 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            3.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 6,
+      "name": "Spike frequency adaptation",
+      "source_anchor": "t3m6",
+      "title": "06 Spike frequency adaptation — 发放频率适应 — 做到*",
+      "description": "Gate直线下降，ISI逐渐增大。整段140 μs线性下降。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "ramp"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular06_0",
+          "label": "主例 03_regular06_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～3 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            3.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 7,
+      "name": "Class I excitability",
+      "source_anchor": "t3m7",
+      "title": "07 Class I excitability — I类兴奋性 — 做到*",
+      "description": "Vin上升斜坡跨过发放阈值，局部放大另列。第一层仅纳入越阈展示；没有证明Class I的阈值频率趋零。",
+      "families": {
+        "vin": "ramp_hold",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular07",
+          "label": "主例 03_regular07",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 8,
+      "name": "Class II excitability",
+      "source_anchor": "t3m8",
+      "title": "08 Class II excitability — II类兴奋性 — 未做到",
+      "description": "本轮未获得足够的有限频率起振对照，不借用其它拓扑结果。 展示激励：与⑦08相同的近阈值双幅度输入；该参考本身也未证实Class II。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m08_0",
+          "label": "主例 03_atlas_m08_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.5082 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.5082
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_atlas_m08_1",
+          "label": "主例 03_atlas_m08_1",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.5085 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.5085
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 9,
+      "name": "Spike latency",
+      "source_anchor": "t3m9",
+      "title": "09 Spike latency — 首脉冲延迟 — 做到",
+      "description": "恒定Gate；不同幅度、相同短输入窗口均单发，比较首脉冲延迟；局部放大另列。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular09_v3.3",
+          "label": "主例 03_regular09_v3.3",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.3 V；Gate=0～1 V",
+          "vin_range_v": [
+            0.0,
+            3.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_regular09_v3.6",
+          "label": "主例 03_regular09_v3.6",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.6 V；Gate=0～1 V",
+          "vin_range_v": [
+            0.0,
+            3.6
+          ],
+          "gate_range_v": [
+            0.0,
+            1.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "03_regular09_v4.3",
+          "label": "主例 03_regular09_v4.3",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～1 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 10,
+      "name": "Subthreshold oscillations",
+      "source_anchor": "t3m10",
+      "title": "10 Subthreshold oscillations — 阈下振荡 — 未做到",
+      "description": "按用户指示，微小/受迫阈下波动不计实现；图中仍展示对应测试的实际响应。 展示激励：沿用⑤10正弦Gate的阈下测试；此参考也未通过自主阈下振荡目标。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "sine_bias"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m10_0",
+          "label": "主例 03_atlas_m10_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～1.59999 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.59999
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 11,
+      "name": "Resonator",
+      "source_anchor": "t3m11",
+      "title": "11 Resonator — 共振器 — 未做到",
+      "description": "照搬⑤正弦Gate参数后，高低输入频率都逐次响应，单输入也有效，未得到累计与频率选择。 展示激励：与⑤11成功参考相同的Vin/Gate时序与CMEM；拓扑仍为③。",
+      "families": {
+        "vin": "pulse_train",
+        "gate": "sine_or_gate_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m11_0",
+          "label": "主例 03_atlas_m11_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.49993 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.49993
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_atlas_m11_1",
+          "label": "主例 03_atlas_m11_1",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.49993 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.49993
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "03_ground_verify_r2_m11_g2.5_w1.8_p6_fine",
+          "label": "对照 03_ground_verify_r2_m11_g2.5_w1.8_p6_fine",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.49993 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.49993
+          ]
+        },
+        {
+          "variant": 3,
+          "experiment": "03_ground_verify_r2_m11_g2.5_w1.8_p12_fine",
+          "label": "对照 03_ground_verify_r2_m11_g2.5_w1.8_p12_fine",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.49993 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.49993
+          ]
+        },
+        {
+          "variant": 4,
+          "experiment": "03_ground_verify_r2_m11_single",
+          "label": "对照 03_ground_verify_r2_m11_single",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.49993 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.49993
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 12,
+      "name": "Integrator",
+      "source_anchor": "t3m12",
+      "title": "12 Integrator — 积分器 — 未做到",
+      "description": "接地膜电容版本未得到近间隔累计、远间隔不发的目标；短输入扫描出现近邻合并，但远间隔各自可发，不能算积分。 展示激励：与⑤12成功参考相同的Vin/Gate时序与CMEM；拓扑仍为③。",
+      "families": {
+        "vin": "near_far_pulses",
+        "gate": "constant"
+      },
+      "components": [
+        "sequence",
+        "near",
+        "far",
+        "single"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m12_0",
+          "label": "主例 03_atlas_m12_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5.5 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            5.5
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_ground_verify_r2_m12",
+          "label": "对照 03_ground_verify_r2_m12",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5.5 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            5.5
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "03_ground_verify_r2_m12_single",
+          "label": "对照 03_ground_verify_r2_m12_single",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5.5 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            5.5
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        },
+        {
+          "variant": 3,
+          "experiment": "03_integration_c1n_w0.05_v3.3",
+          "label": "对照 03_integration_c1n_w0.05_v3.3",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            3.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 13,
+      "name": "Rebound spike",
+      "source_anchor": "t3m13",
+      "title": "13 Rebound spike — 反弹单发 — 未做到",
+      "description": "负Vin撤去后返回0、Gate恒定；当前测试未得到目标反弹发放。此前返回正偏置的曲线仅保留作历史对照。 展示激励：四拓扑统一：0→−5 V→0，恒Gate=6 V；在负脉冲撤去后检验单发与簇发，没有重新施加正Vin。",
+      "families": {
+        "vin": "negative_release",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m13_0",
+          "label": "主例 03_atlas_m13_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_negative_b4.3_n-5_g4",
+          "label": "对照 03_negative_b4.3_n-5_g4",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            -5.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "03_rebound_bias_only",
+          "label": "对照 03_rebound_bias_only",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 14,
+      "name": "Rebound burst",
+      "source_anchor": "t3m14",
+      "title": "14 Rebound burst — 反弹簇发 — 未做到",
+      "description": "负Vin撤去后返回0、Gate恒定；当前测试未得到目标反弹发放。此前返回正偏置的曲线仅保留作历史对照。 展示激励：与13使用同一负输入撤去测试；检查释放后是否形成有限脉冲簇。",
+      "families": {
+        "vin": "negative_release",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m13_0",
+          "label": "主例 03_atlas_m13_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 15,
+      "name": "Threshold variability",
+      "source_anchor": "t3m15",
+      "title": "15 Threshold variability — 阈值可变性 — 做到",
+      "description": "同幅Vin配合不同高度、对齐的长Gate方波，分别不发、少发、多发。③使用现有CMEM=0.1 nF、Vin上升时间2 μs；其余项目通常1 nF。 无Gate记忆电容。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "three_gate_levels"
+      },
+      "components": [
+        "sequence",
+        "low",
+        "mid",
+        "high"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_quantity_c.1n",
+          "label": "主例 03_quantity_c.1n",
+          "parameters": "C=0.1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 16,
+      "name": "Bistability",
+      "source_anchor": "t3m16",
+      "title": "16 Bistability — 双稳态 — 做到*",
+      "description": "Gate先恒定，Vin方波启动发放；Vin仍高时一个正向Gate方波停止重复尖峰。停止段进入低阻直流，不代表电流归零；不宣称同偏置双吸引子。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "stop_gate_step"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_final16_gate_stop",
+          "label": "主例 03_final16_gate_stop",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 17,
+      "name": "Depolarizing after-potential",
+      "source_anchor": "t3m17",
+      "title": "17 Depolarizing after-potential — 去极化后电位 — 未做到",
+      "description": "恒定正Vin和Gate平台内没有有效负向输出；启动、撤去和Gate边沿尖峰均排除。 展示激励：与⑦17相同的Vin/Gate恒定输入；仅平台内负电流属于目标，启动与撤去尖峰不算。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m17_0",
+          "label": "主例 03_atlas_m17_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～2 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_regular17_g2.4",
+          "label": "对照 03_regular17_g2.4",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 18,
+      "name": "Accommodation",
+      "source_anchor": "t3m18",
+      "title": "18 Accommodation — 适应性 — 做到",
+      "description": "③恒定Gate=1 V，快上升发一次、80 μs慢上升在上升及保持窗口内不发；单发后电流约0.06 mA。两者撤去输入时仍有反向瞬态，图中完整保留，不计作正向发放。",
+      "families": {
+        "vin": "fast_slow_ramp",
+        "gate": "constant_or_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular18_rise0.02",
+          "label": "主例 03_regular18_rise0.02",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～1 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_regular18_rise80",
+          "label": "主例 03_regular18_rise80",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～1 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 19,
+      "name": "Inhibition-induced spiking",
+      "source_anchor": "t3m19",
+      "title": "19 Inhibition-induced spiking — 抑制诱导发放 — 未做到",
+      "description": "严格负输入下未获得持续反向脉冲，连续反向直流不算持续发放。 展示激励：沿用⑦19成功参考的Vin/Gate时序、CMEM；⑥同时采用相同RLIMIT=3.3kΩ，③⑤没有此元件。",
+      "families": {
+        "vin": "negative_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m19_0",
+          "label": "主例 03_atlas_m19_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_negative_b4.3_n-5_g4",
+          "label": "对照 03_negative_b4.3_n-5_g4",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            -5.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 20,
+      "name": "Inhibition-induced bursting",
+      "source_anchor": "t3m20",
+      "title": "20 Inhibition-induced bursting — 抑制诱导簇发 — 未做到",
+      "description": "严格负输入下未找到目标反向簇发。 展示激励：沿用⑦20成功参考的Vin/Gate时序、CMEM；⑥同时采用相同RLIMIT=3.3kΩ，③⑤没有此元件。",
+      "families": {
+        "vin": "negative_bursts",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_atlas_m20_0",
+          "label": "主例 03_atlas_m20_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 21,
+      "name": "All-or-none response",
+      "source_anchor": "t3m21",
+      "title": "21 All-or-none response — 全或无响应 — 做到",
+      "description": "恒定Gate，不同幅度Vin展示不发与发放；调低后续持续电流。③实际Gate=1 V（旧实验ID不是参数值），完整参数以input.json为准。",
+      "families": {
+        "vin": "multi_level_pulses",
+        "gate": "constant"
+      },
+      "components": [
+        "sequence",
+        "low",
+        "mid",
+        "high"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular21_g1.7",
+          "label": "主例 03_regular21_g1.7",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～1 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 22,
+      "name": "Refractory period",
+      "source_anchor": "t3m22",
+      "title": "22 Refractory period — 不应期 — 做到*",
+      "description": "Gate恒压；单个探针各自能触发，短间隔对只产生一次Mott开关、稍长间隔产生两次。附局部放大。仅证明未复位电流合并与恢复，不宣称严格绝对不应期；间隔从下降沿起点计，含20 ns下降时间。",
+      "families": {
+        "vin": "paired_probes",
+        "gate": "constant"
+      },
+      "components": [
+        "pair",
+        "first",
+        "second"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular22_gap0.1",
+          "label": "主例 03_regular22_gap0.1",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "03_regular22_gap0.5",
+          "label": "主例 03_regular22_gap0.5",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "03_final22_single1",
+          "label": "对照 03_final22_single1",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 3,
+          "experiment": "03_final22_single2",
+          "label": "对照 03_final22_single2",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 3,
+      "mode": 23,
+      "name": "Depolarization block",
+      "source_anchor": "t3m23",
+      "title": "23 Depolarization block — 去极化阻滞 — 做到",
+      "description": "恒定Gate，Vin上升—平台—归零。上升途中发放，强输入段转为连续低阻导通；阻断的是重复尖峰而不是直流。",
+      "families": {
+        "vin": "ramp_hold",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "03_regular23",
+          "label": "主例 03_regular23",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～12 V；Gate=0～3.5 V",
+          "vin_range_v": [
+            0.0,
+            12.0
+          ],
+          "gate_range_v": [
+            0.0,
+            3.5
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 1,
+      "name": "Tonic spiking",
+      "source_anchor": "t5m1",
+      "title": "01 Tonic spiking — 持续发放 — 做到",
+      "description": "Vin方波重复两次，工作窗口内Gate恒定；重复发放不由逐次Gate触发。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular01",
+          "label": "主例 05_regular01",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 2,
+      "name": "Phasic spiking",
+      "source_anchor": "t5m2",
+      "title": "02 Phasic spiking — 相位性单发 — 做到",
+      "description": "Gate恒压，每次输入起始单发。单发后维持低阻直流，属于用户原先指定的起始单发操作目标。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular02",
+          "label": "主例 05_regular02",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 3,
+      "name": "Tonic bursting",
+      "source_anchor": "t5m3",
+      "title": "03 Tonic bursting — 持续簇发 — 做到*",
+      "description": "每个Vin长窗口内，Gate为三段22 μs长方波，每段自然产生多个脉冲；簇节律由Gate规定。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "three_gate_windows"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular03",
+          "label": "主例 05_regular03",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 4,
+      "name": "Phasic bursting",
+      "source_anchor": "t5m4",
+      "title": "04 Phasic bursting — 相位性簇发 — 做到*",
+      "description": "仅输入开始时使能22 μs，之后Gate降为0；长方波形成起始簇。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "onset_gate_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular04",
+          "label": "主例 05_regular04",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 5,
+      "name": "Mixed mode",
+      "source_anchor": "t5m5",
+      "title": "05 Mixed mode — 混合模式 — 做到*",
+      "description": "Gate直线下降，ISI逐渐增大。前70 μs下降后保持低值，呈快到慢变化，未插入归零边沿。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "ramp_or_step_hold"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular05_0",
+          "label": "主例 05_regular05_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～3 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            3.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 6,
+      "name": "Spike frequency adaptation",
+      "source_anchor": "t5m6",
+      "title": "06 Spike frequency adaptation — 发放频率适应 — 做到*",
+      "description": "Gate直线下降，ISI逐渐增大。整段140 μs线性下降。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "ramp"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular06_0",
+          "label": "主例 05_regular06_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～3 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            3.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 7,
+      "name": "Class I excitability",
+      "source_anchor": "t5m7",
+      "title": "07 Class I excitability — I类兴奋性 — 做到*",
+      "description": "Vin上升斜坡跨过发放阈值，局部放大另列。第一层仅纳入越阈展示；没有证明Class I的阈值频率趋零。",
+      "families": {
+        "vin": "ramp_hold",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular07",
+          "label": "主例 05_regular07",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 8,
+      "name": "Class II excitability",
+      "source_anchor": "t5m8",
+      "title": "08 Class II excitability — II类兴奋性 — 未做到",
+      "description": "本轮未获得足够的有限频率起振对照，不借用其它拓扑结果。 展示激励：与⑦08相同的近阈值双幅度输入；该参考本身也未证实Class II。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_atlas_m08_0",
+          "label": "主例 05_atlas_m08_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.5082 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.5082
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_atlas_m08_1",
+          "label": "主例 05_atlas_m08_1",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.5085 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.5085
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 9,
+      "name": "Spike latency",
+      "source_anchor": "t5m9",
+      "title": "09 Spike latency — 首脉冲延迟 — 做到",
+      "description": "恒定Gate；不同幅度、相同短输入窗口均单发，比较首脉冲延迟；局部放大另列。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_r2_m09_4.1",
+          "label": "主例 05_r2_m09_4.1",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.1 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            4.1
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_r2_m09_4.3",
+          "label": "主例 05_r2_m09_4.3",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "05_r2_m09_4.8",
+          "label": "主例 05_r2_m09_4.8",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.8 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            4.8
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 10,
+      "name": "Subthreshold oscillations",
+      "source_anchor": "t5m10",
+      "title": "10 Subthreshold oscillations — 阈下振荡 — 未做到",
+      "description": "按用户指示，微小/受迫阈下波动不计实现；图中仍展示对应测试的实际响应。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "sine_bias"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_m10_g1.3_a0.3",
+          "label": "主例 05_m10_g1.3_a0.3",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～1.59999 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.59999
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_m10_flat_control",
+          "label": "对照 05_m10_flat_control",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～1.3 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            1.3
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 11,
+      "name": "Resonator",
+      "source_anchor": "t5m11",
+      "title": "11 Resonator — 共振器 — 做到*",
+      "description": "输入：Vin=6V、宽1.8μs、10次；Gate为0–2.5V正弦，周期12μs；对齐/错相。结果：每组恰好 10 个 6 V、宽 1.8 μs 方波。Gate 为 0–2.5 V、周期 12 μs 正弦；错相高频输入 0 次，对齐低频输入 4 次，首次需 3 个输入；单输入对照不发。 同拓扑历史RAW复用，采样仍10Ω。",
+      "families": {
+        "vin": "pulse_train",
+        "gate": "sine_or_gate_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_r2_m11_g2.5_w1.8_p6_fine",
+          "label": "主例 05_r2_m11_g2.5_w1.8_p6_fine",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.49993 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.49993
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_r2_m11_g2.5_w1.8_p12_fine",
+          "label": "主例 05_r2_m11_g2.5_w1.8_p12_fine",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.49993 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.49993
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "05_r2_m11_single",
+          "label": "对照 05_r2_m11_single",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～2.49993 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.49993
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 12,
+      "name": "Integrator",
+      "source_anchor": "t5m12",
+      "title": "12 Integrator — 积分器 — 做到",
+      "description": "输入：Vin=5.5V、宽1.4μs、每组6次，空隙4/8μs；Gate=2.2V恒定。结果：两组均为 6 个 5.5 V、宽 1.4 μs 输入。前组空隙 4 μs：1 次；后组空隙 8 μs：0 次。空隙按前一脉冲下降开始到下一上升开始计算，边沿为 0.02 μs。 同拓扑历史RAW复用，采样仍10Ω。",
+      "families": {
+        "vin": "near_far_pulses",
+        "gate": "constant"
+      },
+      "components": [
+        "sequence",
+        "near",
+        "far",
+        "single"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_r2_m12",
+          "label": "主例 05_r2_m12",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5.5 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            5.5
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_r2_m12_single",
+          "label": "对照 05_r2_m12_single",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5.5 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            5.5
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 13,
+      "name": "Rebound spike",
+      "source_anchor": "t5m13",
+      "title": "13 Rebound spike — 反弹单发 — 未做到",
+      "description": "负Vin撤去后返回0、Gate恒定；当前测试未得到目标反弹发放。此前返回正偏置的曲线仅保留作历史对照。 展示激励：四拓扑统一：0→−5 V→0，恒Gate=6 V；在负脉冲撤去后检验单发与簇发，没有重新施加正Vin。",
+      "families": {
+        "vin": "negative_release",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_atlas_m13_0",
+          "label": "主例 05_atlas_m13_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_negative_b4.3_n-5_g4",
+          "label": "对照 05_negative_b4.3_n-5_g4",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            -5.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "05_rebound_bias_only",
+          "label": "对照 05_rebound_bias_only",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 14,
+      "name": "Rebound burst",
+      "source_anchor": "t5m14",
+      "title": "14 Rebound burst — 反弹簇发 — 未做到",
+      "description": "负Vin撤去后返回0、Gate恒定；当前测试未得到目标反弹发放。此前返回正偏置的曲线仅保留作历史对照。 展示激励：与13使用同一负输入撤去测试；检查释放后是否形成有限脉冲簇。",
+      "families": {
+        "vin": "negative_release",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_atlas_m13_0",
+          "label": "主例 05_atlas_m13_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 15,
+      "name": "Threshold variability",
+      "source_anchor": "t5m15",
+      "title": "15 Threshold variability — 阈值可变性 — 做到",
+      "description": "同幅Vin配合不同高度、对齐的长Gate方波，分别不发、少发、多发。 无Gate记忆电容。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "three_gate_levels"
+      },
+      "components": [
+        "sequence",
+        "low",
+        "mid",
+        "high"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular15",
+          "label": "主例 05_regular15",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 16,
+      "name": "Bistability",
+      "source_anchor": "t5m16",
+      "title": "16 Bistability — 双稳态 — 做到*",
+      "description": "Gate先恒定，Vin方波启动发放；Vin仍高时一个正向Gate方波停止重复尖峰。停止段进入低阻直流，不代表电流归零；不宣称同偏置双吸引子。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "stop_gate_step"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_final16_gate_stop",
+          "label": "主例 05_final16_gate_stop",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 17,
+      "name": "Depolarizing after-potential",
+      "source_anchor": "t5m17",
+      "title": "17 Depolarizing after-potential — 去极化后电位 — 未做到",
+      "description": "恒定正Vin和Gate平台内没有有效负向输出；启动、撤去和Gate边沿尖峰均排除。 展示激励：与⑦17相同的Vin/Gate恒定输入；仅平台内负电流属于目标，启动与撤去尖峰不算。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_atlas_m17_0",
+          "label": "主例 05_atlas_m17_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～2 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_regular17_g2.4",
+          "label": "对照 05_regular17_g2.4",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.4 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.4
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 18,
+      "name": "Accommodation",
+      "source_anchor": "t5m18",
+      "title": "18 Accommodation — 适应性 — 做到*",
+      "description": "相对每次Vin起点使用相同8 μs长Gate使能窗口，快速输入有发放、慢上升输入无发放；窗口关闭降低后续直流。这是外部门控的快慢选择，不是已证明的内源适应。",
+      "families": {
+        "vin": "fast_slow_ramp",
+        "gate": "constant_or_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_final18_window_rise0.02",
+          "label": "主例 05_final18_window_rise0.02",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_final18_window_rise80",
+          "label": "主例 05_final18_window_rise80",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.3 V；Gate=0～2.2 V",
+          "vin_range_v": [
+            0.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            2.2
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 19,
+      "name": "Inhibition-induced spiking",
+      "source_anchor": "t5m19",
+      "title": "19 Inhibition-induced spiking — 抑制诱导发放 — 未做到",
+      "description": "严格负输入下未获得持续反向脉冲，连续反向直流不算持续发放。 展示激励：沿用⑦19成功参考的Vin/Gate时序、CMEM；⑥同时采用相同RLIMIT=3.3kΩ，③⑤没有此元件。",
+      "families": {
+        "vin": "negative_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_atlas_m19_0",
+          "label": "主例 05_atlas_m19_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_negative_b4.3_n-5_g4",
+          "label": "对照 05_negative_b4.3_n-5_g4",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～4.3 V；Gate=0～4 V",
+          "vin_range_v": [
+            -5.0,
+            4.3
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 20,
+      "name": "Inhibition-induced bursting",
+      "source_anchor": "t5m20",
+      "title": "20 Inhibition-induced bursting — 抑制诱导簇发 — 未做到",
+      "description": "严格负输入下未找到目标反向簇发。 展示激励：沿用⑦20成功参考的Vin/Gate时序、CMEM；⑥同时采用相同RLIMIT=3.3kΩ，③⑤没有此元件。",
+      "families": {
+        "vin": "negative_bursts",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_atlas_m20_0",
+          "label": "主例 05_atlas_m20_0",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 21,
+      "name": "All-or-none response",
+      "source_anchor": "t5m21",
+      "title": "21 All-or-none response — 全或无响应 — 做到",
+      "description": "恒定Gate，不同幅度Vin展示不发与发放；采用较低后续电流的工作点，不把脉冲间的低电流中位数当静态电流。",
+      "families": {
+        "vin": "multi_level_pulses",
+        "gate": "constant"
+      },
+      "components": [
+        "sequence",
+        "low",
+        "mid",
+        "high"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular21_g1.7",
+          "label": "主例 05_regular21_g1.7",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～1.7 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            1.7
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 22,
+      "name": "Refractory period",
+      "source_anchor": "t5m22",
+      "title": "22 Refractory period — 不应期 — 做到*",
+      "description": "Gate恒压；单个探针各自能触发，短间隔对只产生一次Mott开关、稍长间隔产生两次。附局部放大。仅证明未复位电流合并与恢复，不宣称严格绝对不应期；间隔从下降沿起点计，含20 ns下降时间。",
+      "families": {
+        "vin": "paired_probes",
+        "gate": "constant"
+      },
+      "components": [
+        "pair",
+        "first",
+        "second"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular22_gap0.1",
+          "label": "主例 05_regular22_gap0.1",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "05_regular22_gap0.5",
+          "label": "主例 05_regular22_gap0.5",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "05_final22_single1",
+          "label": "对照 05_final22_single1",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 3,
+          "experiment": "05_final22_single2",
+          "label": "对照 05_final22_single2",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 5,
+      "mode": 23,
+      "name": "Depolarization block",
+      "source_anchor": "t5m23",
+      "title": "23 Depolarization block — 去极化阻滞 — 做到",
+      "description": "恒定Gate，Vin上升—平台—归零。上升途中发放，强输入段转为连续低阻导通；阻断的是重复尖峰而不是直流。",
+      "families": {
+        "vin": "ramp_hold",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "05_regular23",
+          "label": "主例 05_regular23",
+          "parameters": "C=1 nF；Rlimit=无 kΩ；Rsense=10 Ω；B=0 V；Vin=0～12 V；Gate=0～3.5 V",
+          "vin_range_v": [
+            0.0,
+            12.0
+          ],
+          "gate_range_v": [
+            0.0,
+            3.5
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 1,
+      "name": "Tonic spiking",
+      "source_anchor": "t6m1",
+      "title": "01 Tonic spiking — 持续发放 — 做到",
+      "description": "恒Gate=6.8V，Vin=5V两段100μs平台；两轮各45次持续发放。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_regular01",
+          "label": "蓝实线 · 主例 06_regular01",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～6.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 2,
+      "name": "Phasic spiking",
+      "source_anchor": "t6m2",
+      "title": "02 Phasic spiking — 相位性单发 — 做到",
+      "description": "恒Gate=8.8V，Vin=5V两段平台；两轮各1次起始单发，随后低阻直流保持。仅按原指定起始单发操作判定。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_regular02",
+          "label": "蓝实线 · 主例 06_regular02",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～8.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 3,
+      "name": "Tonic bursting",
+      "source_anchor": "t6m3",
+      "title": "03 Tonic bursting — 持续簇发 — 做到*",
+      "description": "Vin长平台内Gate为6.8V的三段22μs长方波，每段自然重复发放，两轮各30次；簇节律来自外部Gate。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "three_gate_windows"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_regular03",
+          "label": "蓝实线 · 主例 06_regular03",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～6.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 4,
+      "name": "Phasic bursting",
+      "source_anchor": "t6m4",
+      "title": "04 Phasic bursting — 相位性簇发 — 做到*",
+      "description": "Vin仍保持时，仅起始22μs开放Gate=6.8V，形成两轮各10次的起始簇；由外部Gate窗口形成。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "onset_gate_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_regular04",
+          "label": "蓝实线 · 主例 06_regular04",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～6.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 5,
+      "name": "Mixed mode",
+      "source_anchor": "t6m5",
+      "title": "05 Mixed mode — 混合模式 — 做到*",
+      "description": "Gate在前70μs从7.8V线性降至6.3V，随后保持；两轮各57次，ISI由约2.02μs增至约2.82μs并维持慢发。原快到慢操作恢复，不宣称内源混合模态。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "ramp_or_step_hold"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_final05_g7_5.5",
+          "label": "蓝实线 · 主例 06_final05_g7_5.5",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～7.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            7.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 6,
+      "name": "Spike frequency adaptation",
+      "source_anchor": "t6m6",
+      "title": "06 Spike frequency adaptation — 发放频率适应 — 做到*",
+      "description": "Gate在140μs内由7.8V线性降至6.3V；两轮各64次，ISI逐渐增大，属于外部Gate诱导减速。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "ramp"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_final06_g7_5.5",
+          "label": "蓝实线 · 主例 06_final06_g7_5.5",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～7.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            7.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 7,
+      "name": "Class I excitability",
+      "source_anchor": "t6m7",
+      "title": "07 Class I excitability — I类兴奋性 — 做到*",
+      "description": "恒Gate=6.8V，Vin上升斜坡越阈后发放，两轮各19次。仅越阈操作候选，未证明Class I阈值频率趋零。",
+      "families": {
+        "vin": "ramp_hold",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_regular07",
+          "label": "蓝实线 · 主例 06_regular07",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～6.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 8,
+      "name": "Class II excitability",
+      "source_anchor": "t6m8",
+      "title": "08 Class II excitability — II类兴奋性 — 未做到",
+      "description": "本轮未获得足够的有限频率起振对照，不借用其它拓扑结果。 展示激励：与⑦08相同的近阈值双幅度输入；该参考本身也未证实Class II。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_atlas_m08_0",
+          "label": "蓝实线 · 主例 06_atlas_m08_0",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～3.5082 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.5082
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_atlas_m08_1",
+          "label": "橙实线 · 主例 06_atlas_m08_1",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～3.5085 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.5085
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 9,
+      "name": "Spike latency",
+      "source_anchor": "t6m9",
+      "title": "09 Spike latency — 首脉冲延迟 — 做到",
+      "description": "恒Gate=7.3V；Vin=4/4.5/5V、相同约3μs输入均每轮单发，比较幅度依赖的首脉冲延迟。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_r_delay_v4",
+          "label": "蓝实线 · 主例 06_r_delay_v4",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～4 V；Gate=0～7.3 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            7.3
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_r9_v4.5_matched",
+          "label": "橙实线 · 主例 06_r9_v4.5_matched",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～4.5 V；Gate=0～7.3 V",
+          "vin_range_v": [
+            0.0,
+            4.5
+          ],
+          "gate_range_v": [
+            0.0,
+            7.3
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "06_r_delay_v5",
+          "label": "灰实线 · 主例 06_r_delay_v5",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～7.3 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            7.3
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 10,
+      "name": "Subthreshold oscillations",
+      "source_anchor": "t6m10",
+      "title": "10 Subthreshold oscillations — 阈下振荡 — 未做到",
+      "description": "保留B=−5V原协议测试；外部Gate产生的膜电位变化不能证明内源阈下振荡，本次未验证。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "sine_bias"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_r_m10",
+          "label": "蓝实线 · 主例 06_r_m10",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～5.1 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            5.1
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 11,
+      "name": "Resonator",
+      "source_anchor": "t6m11",
+      "title": "11 Resonator — 共振器 — 做到*",
+      "description": "Vin=6V、宽约0.77μs含边沿，10个输入；Gate为0–8V、周期2μs的持续正弦。匹配周期2μs发4次，首次第三输入后；密集错相/单输入/无输入均0。属于外部节律输入选择，不宣称内源共振。",
+      "families": {
+        "vin": "pulse_train",
+        "gate": "sine_or_gate_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_r11_v6_g8_aligned",
+          "label": "蓝实线 · 主例 06_r11_v6_g8_aligned",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～6 V；Gate=0～8 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_r11_v6_g8_offset",
+          "label": "橙实线 · 主例 06_r11_v6_g8_offset",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～6 V；Gate=0～8 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "06_r11_v6_g8_aligned_single",
+          "label": "灰实线 · 对照 06_r11_v6_g8_aligned_single",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～6 V；Gate=0～8 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.0
+          ]
+        },
+        {
+          "variant": 3,
+          "experiment": "06_r11_no_input",
+          "label": "紫实线 · 对照 06_r11_no_input",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～0 V；Gate=0～8 V",
+          "vin_range_v": [
+            0.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 12,
+      "name": "Integrator",
+      "source_anchor": "t6m12",
+      "title": "12 Integrator — 积分器 — 做到*",
+      "description": "Vin=5V、宽约0.47μs含边沿、6次；Gate=7.1V、宽约0.43μs同步关闭。周期1.2μs积累1次，周期15μs不发，两轮重复；单输入与恒Gate对照均0。同步Gate关闭是必要协议条件。",
+      "families": {
+        "vin": "near_far_pulses",
+        "gate": "constant_with_synchronous_notches"
+      },
+      "components": [
+        "sequence",
+        "near",
+        "far",
+        "single"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_r12_w0.45_g6.5",
+          "label": "蓝实线 · 主例 06_r12_w0.45_g6.5",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～7.1 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            7.1
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_r12_w0.45_g6.5_single",
+          "label": "橙实线 · 对照 06_r12_w0.45_g6.5_single",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～7.1 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            7.1
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "06_r12_fixed_gate",
+          "label": "灰实线 · 对照 06_r12_fixed_gate",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～7.1 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            7.1
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 13,
+      "name": "Rebound spike",
+      "source_anchor": "t6m13",
+      "title": "13 Rebound spike — 反弹单发 — 未做到",
+      "description": "B=−5V负输入撤回0后，两个释放窗口均无反弹发放；负平台内发放或返回正偏置不能计作反弹。",
+      "families": {
+        "vin": "negative_release",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_atlas_m13_0",
+          "label": "蓝实线 · 主例 06_atlas_m13_0",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_negative_b5_n-5_g8",
+          "label": "橙实线 · 对照 06_negative_b5_n-5_g8",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=-5～5 V；Gate=0～8 V",
+          "vin_range_v": [
+            -5.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "06_rebound_bias_only",
+          "label": "灰实线 · 对照 06_rebound_bias_only",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 14,
+      "name": "Rebound burst",
+      "source_anchor": "t6m14",
+      "title": "14 Rebound burst — 反弹簇发 — 未做到",
+      "description": "B=−5V负输入撤回0后未出现反弹簇发，本次测试不支持。",
+      "families": {
+        "vin": "negative_release",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_atlas_m13_0",
+          "label": "蓝实线 · 主例 06_atlas_m13_0",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 15,
+      "name": "Threshold variability",
+      "source_anchor": "t6m15",
+      "title": "15 Threshold variability — 阈值可变性 — 做到",
+      "description": "Vin同为5V；Gate=5.8/6.3/7.3V的长窗口对应0/10/14次，两轮重复；展示Gate调节可发条件。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "three_gate_levels"
+      },
+      "components": [
+        "sequence",
+        "low",
+        "mid",
+        "high"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_regular15",
+          "label": "蓝实线 · 主例 06_regular15",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～7.3 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            7.3
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 16,
+      "name": "Bistability",
+      "source_anchor": "t6m16",
+      "title": "16 Bistability — 双稳态 — 做到*",
+      "description": "Vin=5V启动、Gate=6.8V时重复发放；Vin持续期间Gate升至8.8V，重复尖峰停止，转为低阻直流。两轮窗口计数20/0。不是同偏置双吸引子证明。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "stop_gate_step"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_final16_gate_stop",
+          "label": "蓝实线 · 主例 06_final16_gate_stop",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～8.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 17,
+      "name": "Depolarizing after-potential",
+      "source_anchor": "t6m17",
+      "title": "17 Depolarizing after-potential — 去极化后电位 — 未做到",
+      "description": "B=−5V原两组未得到发放后去极化后电位的证据；不以负电流替代功能判据。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_atlas_m17_0",
+          "label": "蓝实线 · 主例 06_atlas_m17_0",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～4 V；Gate=0～2 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_regular17_g6",
+          "label": "橙实线 · 对照 06_regular17_g6",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 18,
+      "name": "Accommodation",
+      "source_anchor": "t6m18",
+      "title": "18 Accommodation — 适应性 — 做到*",
+      "description": "相对各Vin起点使用同样8μs、6.3V Gate窗口，快上升两轮各2次，80μs慢上升均0。恢复外部门控快慢选择操作；不证明恒Gate下内源Accommodation，*仅计入操作展示。",
+      "families": {
+        "vin": "fast_slow_ramp",
+        "gate": "constant_or_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_final18_window_rise0.02",
+          "label": "蓝实线 · 主例 06_final18_window_rise0.02",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～6.3 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.3
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_final18_window_rise80",
+          "label": "橙实线 · 主例 06_final18_window_rise80",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～6.3 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.3
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 19,
+      "name": "Inhibition-induced spiking",
+      "source_anchor": "t6m19",
+      "title": "19 Inhibition-induced spiking — 抑制诱导发放 — 做到",
+      "description": "Vin=−5V、Gate=6V、Rlimit=3.3kΩ、C=1nF，B=−5V，两轮60μs负平台各14次重复发放。1/0.5ns复核计数一致，无输入对照0。",
+      "families": {
+        "vin": "negative_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_atlas_m19_0",
+          "label": "蓝实线 · 主例 06_atlas_m19_0",
+          "parameters": "C=1 nF；Rlimit=3.3 kΩ；Rsense=10 Ω；B=-5 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_negative_b5_n-5_g8",
+          "label": "橙实线 · 对照 06_negative_b5_n-5_g8",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=-5～5 V；Gate=0～8 V",
+          "vin_range_v": [
+            -5.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 20,
+      "name": "Inhibition-induced bursting",
+      "source_anchor": "t6m20",
+      "title": "20 Inhibition-induced bursting — 抑制诱导簇发 — 做到*",
+      "description": "同负向参数，3个22μs负输入段每段5次，每轮15次，两轮重复。1/0.5ns计数一致；由外部输入分段形成簇发，不宣称恒定负输入下内源簇发。",
+      "families": {
+        "vin": "negative_bursts",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_atlas_m20_0",
+          "label": "蓝实线 · 主例 06_atlas_m20_0",
+          "parameters": "C=1 nF；Rlimit=3.3 kΩ；Rsense=10 Ω；B=-5 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 21,
+      "name": "All-or-none response",
+      "source_anchor": "t6m21",
+      "title": "21 All-or-none response — 全或无响应 — 做到",
+      "description": "恒Gate=6.3V；Vin=3/4.7/5V短输入对应0/1/1次，两轮重复。展示阈下无尖峰与阈上全幅尖峰。",
+      "families": {
+        "vin": "multi_level_pulses",
+        "gate": "constant"
+      },
+      "components": [
+        "sequence",
+        "low",
+        "mid",
+        "high"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_final21_width3.2",
+          "label": "蓝实线 · 主例 06_final21_width3.2",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～6.3 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.3
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 22,
+      "name": "Refractory period",
+      "source_anchor": "t6m22",
+      "title": "22 Refractory period — 不应期 — 做到*",
+      "description": "恒Gate=8.8V；单输入分别1次，短间隔0.1μs双输入合并为1次，0.3μs恢复2次。间隔从下降沿起点计；仅证明未复位电流合并与恢复，不宣称严格绝对不应期。",
+      "families": {
+        "vin": "paired_probes",
+        "gate": "constant"
+      },
+      "components": [
+        "pair",
+        "first",
+        "second"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_regular22_gap0.1",
+          "label": "蓝实线 · 主例 06_regular22_gap0.1",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～8.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.8
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "06_regular22_gap0.3",
+          "label": "橙实线 · 主例 06_regular22_gap0.3",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～8.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.8
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "06_final22_single1",
+          "label": "灰实线 · 对照 06_final22_single1",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～8.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.8
+          ]
+        },
+        {
+          "variant": 3,
+          "experiment": "06_final22_single2",
+          "label": "紫实线 · 对照 06_final22_single2",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～5 V；Gate=0～8.8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.8
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 6,
+      "mode": 23,
+      "name": "Depolarization block",
+      "source_anchor": "t6m23",
+      "title": "23 Depolarization block — 去极化阻滞 — 做到",
+      "description": "恒Gate=6.3V，Vin斜坡升至8V并保持；上升途中两轮各9次，强输入段低阻直流保持。阻断的是重复尖峰，不是电流归零。",
+      "families": {
+        "vin": "ramp_hold",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "06_regular23",
+          "label": "蓝实线 · 主例 06_regular23",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=-5 V；Vin=0～8 V；Gate=0～6.3 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.3
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 1,
+      "name": "Tonic spiking",
+      "source_anchor": "t7m1",
+      "title": "01 Tonic spiking — 持续发放 — 做到",
+      "description": "Vin方波重复两次，工作窗口内Gate恒定；重复发放不由逐次Gate触发。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_regular01",
+          "label": "蓝实线 · 主例 07_regular01",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 2,
+      "name": "Phasic spiking",
+      "source_anchor": "t7m2",
+      "title": "02 Phasic spiking — 相位性单发 — 做到",
+      "description": "Gate恒压，每次输入起始单发。单发后维持低阻直流，属于用户原先指定的起始单发操作目标。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_regular02",
+          "label": "蓝实线 · 主例 07_regular02",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～8 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            8.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 3,
+      "name": "Tonic bursting",
+      "source_anchor": "t7m3",
+      "title": "03 Tonic bursting — 持续簇发 — 做到*",
+      "description": "每个Vin长窗口内，Gate为三段22 μs长方波，每段自然产生多个脉冲；簇节律由Gate规定。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "three_gate_windows"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_regular03",
+          "label": "蓝实线 · 主例 07_regular03",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 4,
+      "name": "Phasic bursting",
+      "source_anchor": "t7m4",
+      "title": "04 Phasic bursting — 相位性簇发 — 做到*",
+      "description": "仅输入开始时使能22 μs，之后Gate降为0；长方波形成起始簇。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "onset_gate_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_regular04",
+          "label": "蓝实线 · 主例 07_regular04",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 5,
+      "name": "Mixed mode",
+      "source_anchor": "t7m5",
+      "title": "05 Mixed mode — 混合模式 — 做到*",
+      "description": "Gate由3.6 V直接切到6 V，发放间隔约2.09→4.54 μs，每窗21次，两个输入窗均成立。 恢复同拓扑已有成功波形，支持*表示第一层外部调制效果；不是内源混合模式/适应机制证明。下降Gate未成功只限制那一种调法，不否定拓扑对快慢发放的支持。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "ramp_or_step_hold"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_retune_c05_fine",
+          "label": "蓝实线 · 主例 07_retune_c05_fine",
+          "parameters": "C=1 nF；Rlimit=10 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 6,
+      "name": "Spike frequency adaptation",
+      "source_anchor": "t7m6",
+      "title": "06 Spike frequency adaptation — 发放频率适应 — 做到*",
+      "description": "Gate从3.4 V线性升到6 V，间隔由约0.37增至4.54 μs；初段包含小幅高频开关，完整电流保留。 恢复同拓扑已有成功波形，支持*表示第一层外部调制效果；不是内源混合模式/适应机制证明。下降Gate未成功只限制那一种调法，不否定拓扑对快慢发放的支持。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "ramp"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_retune_c06_g3.4_fine",
+          "label": "蓝实线 · 主例 07_retune_c06_g3.4_fine",
+          "parameters": "C=1 nF；Rlimit=10 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 7,
+      "name": "Class I excitability",
+      "source_anchor": "t7m7",
+      "title": "07 Class I excitability — I类兴奋性 — 做到*",
+      "description": "Vin上升斜坡跨过发放阈值，局部放大另列。第一层仅纳入越阈展示；没有证明Class I的阈值频率趋零。",
+      "families": {
+        "vin": "ramp_hold",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_regular07",
+          "label": "蓝实线 · 主例 07_regular07",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 8,
+      "name": "Class II excitability",
+      "source_anchor": "t7m8",
+      "title": "08 Class II excitability — II类兴奋性 — 未做到",
+      "description": "原近阈值两个恒压输入的对照不足以确认Class II兴奋性；按2026-10-09复核取消成功判定，数据仅作未通过证据保留。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_onset_final_v3.5082",
+          "label": "蓝实线 · 主例 07_onset_final_v3.5082",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.5082 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.5082
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_onset_final_v3.5085",
+          "label": "橙实线 · 主例 07_onset_final_v3.5085",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.5085 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.5085
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "07_near_onset_v3.51",
+          "label": "灰实线 · 主例 07_near_onset_v3.51",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3.51 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            3.51
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 9,
+      "name": "Spike latency",
+      "source_anchor": "t7m9",
+      "title": "09 Spike latency — 首脉冲延迟 — 做到",
+      "description": "恒定Gate；不同幅度、相同短输入窗口均单发，比较首脉冲延迟；局部放大另列。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_seed_b09_delay4",
+          "label": "蓝实线 · 主例 07_seed_b09_delay4",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_seed_b09_delay4.5",
+          "label": "橙实线 · 主例 07_seed_b09_delay4.5",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            4.5
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "07_seed_b09_delay5",
+          "label": "灰实线 · 主例 07_seed_b09_delay5",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 10,
+      "name": "Subthreshold oscillations",
+      "source_anchor": "t7m10",
+      "title": "10 Subthreshold oscillations — 阈下振荡 — 未做到",
+      "description": "按用户指示，微小/受迫阈下波动不计实现；图中仍展示对应测试的实际响应。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "sine_bias"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_seed_b10",
+          "label": "蓝实线 · 主例 07_seed_b10",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～3 V；Gate=0～4.99979 V",
+          "vin_range_v": [
+            0.0,
+            3.0
+          ],
+          "gate_range_v": [
+            0.0,
+            4.99979
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 11,
+      "name": "Resonator",
+      "source_anchor": "t7m11",
+      "title": "11 Resonator — 共振器 — 未做到",
+      "description": "快速逐周期匹配42组尚未同时满足全部判据。旧慢Gate窗口不计共振；Gate对泄漏速度的控制另作机制展示。",
+      "families": {
+        "vin": "pulse_train",
+        "gate": "gate_windows_or_constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_select_v6_w0.5_fast0_half",
+          "label": "蓝实线 · 主例 07_select_v6_w0.5_fast0_half",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_select_v6_w0.5_fast1_half",
+          "label": "橙实线 · 主例 07_select_v6_w0.5_fast1_half",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "07_select_control_single",
+          "label": "灰实线 · 对照 07_select_control_single",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 3,
+          "experiment": "07_select_control_none",
+          "label": "紫实线 · 对照 07_select_control_none",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 4,
+          "experiment": "07_select_control_early_gate",
+          "label": "蓝虚线 · 对照 07_select_control_early_gate",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 5,
+          "experiment": "07_select_control_repeat",
+          "label": "橙虚线 · 对照 07_select_control_repeat",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 6,
+          "experiment": "07_select_constant_gate",
+          "label": "灰虚线 · 对照 07_select_constant_gate",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 12,
+      "name": "Integrator",
+      "source_anchor": "t7m12",
+      "title": "12 Integrator — 积分器 — 做到",
+      "description": "固定Gate6V，多输入近间隔累计一次、远间隔不发，重复1/0/1/0；单输入0。 同拓扑历史RAW复用，采样仍10Ω。",
+      "families": {
+        "vin": "near_far_pulses",
+        "gate": "constant"
+      },
+      "components": [
+        "sequence",
+        "near",
+        "far",
+        "single"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_seed_b12_w0.66",
+          "label": "蓝实线 · 主例 07_seed_b12_w0.66",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_seed_b12_final_single",
+          "label": "橙实线 · 对照 07_seed_b12_final_single",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 13,
+      "name": "Rebound spike",
+      "source_anchor": "t7m13",
+      "title": "13 Rebound spike — 反弹单发 — 未做到",
+      "description": "负Vin撤去后返回0、Gate恒定；当前测试未得到目标反弹发放。此前返回正偏置的曲线仅保留作历史对照。 展示激励：四拓扑统一：0→−5 V→0，恒Gate=6 V；在负脉冲撤去后检验单发与簇发，没有重新施加正Vin。",
+      "families": {
+        "vin": "negative_release",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_atlas_m13_0",
+          "label": "蓝实线 · 主例 07_atlas_m13_0",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_negative_b6_n-5_g6",
+          "label": "橙实线 · 对照 07_negative_b6_n-5_g6",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～6 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "07_rebound_bias_only",
+          "label": "灰实线 · 对照 07_rebound_bias_only",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～6 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            6.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 14,
+      "name": "Rebound burst",
+      "source_anchor": "t7m14",
+      "title": "14 Rebound burst — 反弹簇发 — 未做到",
+      "description": "负Vin撤去后返回0、Gate恒定；当前测试未得到目标反弹发放。此前返回正偏置的曲线仅保留作历史对照。 展示激励：与13使用同一负输入撤去测试；检查释放后是否形成有限脉冲簇。",
+      "families": {
+        "vin": "negative_release",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_atlas_m13_0",
+          "label": "蓝实线 · 主例 07_atlas_m13_0",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 15,
+      "name": "Threshold variability",
+      "source_anchor": "t7m15",
+      "title": "15 Threshold variability — 阈值可变性 — 做到",
+      "description": "同幅Vin配合不同高度、对齐的长Gate方波，分别不发、少发、多发。 无Gate记忆电容。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "three_gate_levels"
+      },
+      "components": [
+        "sequence",
+        "low",
+        "mid",
+        "high"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_regular15",
+          "label": "蓝实线 · 主例 07_regular15",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 16,
+      "name": "Bistability",
+      "source_anchor": "t7m16",
+      "title": "16 Bistability — 双稳态 — 做到*",
+      "description": "Gate先恒定，Vin方波启动发放；Vin仍高时一个正向Gate方波停止重复尖峰。停止段进入低阻直流，不代表电流归零；不宣称同偏置双吸引子。⑦最终Vin=4.4 V、Gate=6→12 V，步长减半均为19次后停止。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "stop_gate_step"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_final16_v4.4",
+          "label": "蓝实线 · 主例 07_final16_v4.4",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4.4 V；Gate=0～12 V",
+          "vin_range_v": [
+            0.0,
+            4.4
+          ],
+          "gate_range_v": [
+            0.0,
+            12.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 17,
+      "name": "Depolarizing after-potential",
+      "source_anchor": "t7m17",
+      "title": "17 Depolarizing after-potential — 去极化后电位 — 未做到",
+      "description": "原负电流瞬态不能证明去极化后电位，当前源极采样也不能读取全部Mott负瞬态；该功能未验证。",
+      "families": {
+        "vin": "positive_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_negative_output_step0.00025",
+          "label": "蓝实线 · 主例 07_negative_output_step0.00025",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～2 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_regular17_g2",
+          "label": "橙实线 · 对照 07_regular17_g2",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～2 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "07_negative_output_step0.0005",
+          "label": "灰实线 · 对照 07_negative_output_step0.0005",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～4 V；Gate=0～2 V",
+          "vin_range_v": [
+            0.0,
+            4.0
+          ],
+          "gate_range_v": [
+            0.0,
+            2.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 18,
+      "name": "Accommodation",
+      "source_anchor": "t7m18",
+      "title": "18 Accommodation — 适应性 — 未做到",
+      "description": "恒Gate快慢输入均会发放，原窗口关闭形成的选择不足以证明适应性；本次不支持。",
+      "families": {
+        "vin": "fast_slow_ramp",
+        "gate": "constant_or_window"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_final18_window_rise0.02",
+          "label": "蓝实线 · 主例 07_final18_window_rise0.02",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_final18_window_rise80",
+          "label": "橙实线 · 主例 07_final18_window_rise80",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 19,
+      "name": "Inhibition-induced spiking",
+      "source_anchor": "t7m19",
+      "title": "19 Inhibition-induced spiking — 抑制诱导发放 — 做到*",
+      "description": "Vin=−5 V、Gate=6 V、RLIMIT=3.3 kΩ，两个60 μs窗各18次反向发放。改的是现有限流电阻，采样仍10Ω。",
+      "families": {
+        "vin": "negative_window",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_negative_tonic_r3300_v-5",
+          "label": "蓝实线 · 主例 07_negative_tonic_r3300_v-5",
+          "parameters": "C=1 nF；Rlimit=3.3 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_final19_zero_control",
+          "label": "橙实线 · 对照 07_final19_zero_control",
+          "parameters": "C=1 nF；Rlimit=3.3 kΩ；Rsense=10 Ω；B=0 V；Vin=0～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 20,
+      "name": "Inhibition-induced bursting",
+      "source_anchor": "t7m20",
+      "title": "20 Inhibition-induced bursting — 抑制诱导簇发 — 做到*",
+      "description": "每个长窗三段−5 V输入、Gate恒压6 V，形成三组反向发放；RLIMIT=3.3 kΩ。Gate=0时仍可反向发放，说明体二极管通路限制负向关断，不能当作理想抑制使能。",
+      "families": {
+        "vin": "negative_bursts",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_final20_negative_g6",
+          "label": "蓝实线 · 主例 07_final20_negative_g6",
+          "parameters": "C=1 nF；Rlimit=3.3 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_final20_negative_g0",
+          "label": "橙实线 · 对照 07_final20_negative_g0",
+          "parameters": "C=1 nF；Rlimit=3.3 kΩ；Rsense=10 Ω；B=0 V；Vin=-5～0 V；Gate=0～0 V",
+          "vin_range_v": [
+            -5.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "07_final19_zero_control",
+          "label": "灰实线 · 对照 07_final19_zero_control",
+          "parameters": "C=1 nF；Rlimit=3.3 kΩ；Rsense=10 Ω；B=0 V；Vin=0～0 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            0.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 21,
+      "name": "All-or-none response",
+      "source_anchor": "t7m21",
+      "title": "21 All-or-none response — 全或无响应 — 做到",
+      "description": "恒定Gate，不同幅度Vin展示不发与发放；采用较低后续电流的工作点，不把脉冲间的低电流中位数当静态电流。",
+      "families": {
+        "vin": "multi_level_pulses",
+        "gate": "constant"
+      },
+      "components": [
+        "sequence",
+        "low",
+        "mid",
+        "high"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_regular21_g4",
+          "label": "蓝实线 · 主例 07_regular21_g4",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～4 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 22,
+      "name": "Refractory period",
+      "source_anchor": "t7m22",
+      "title": "22 Refractory period — 不应期 — 做到*",
+      "description": "Gate恒压；单个探针各自能触发，短间隔对只产生一次Mott开关、稍长间隔产生两次。附局部放大。仅证明未复位电流合并与恢复，不宣称严格绝对不应期；间隔从下降沿起点计，含20 ns下降时间。",
+      "families": {
+        "vin": "paired_probes",
+        "gate": "constant"
+      },
+      "components": [
+        "pair",
+        "first",
+        "second"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_verify_seed_b22_gap0.05",
+          "label": "蓝实线 · 主例 07_verify_seed_b22_gap0.05",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 1,
+          "experiment": "07_verify_seed_b22_gap0.1",
+          "label": "橙实线 · 主例 07_verify_seed_b22_gap0.1",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 2,
+          "experiment": "07_final22_single1",
+          "label": "灰实线 · 对照 07_final22_single1",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        },
+        {
+          "variant": 3,
+          "experiment": "07_final22_single2",
+          "label": "紫实线 · 对照 07_final22_single2",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～5 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            5.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    },
+    {
+      "topology": 7,
+      "mode": 23,
+      "name": "Depolarization block",
+      "source_anchor": "t7m23",
+      "title": "23 Depolarization block — 去极化阻滞 — 做到",
+      "description": "恒定Gate，Vin上升—平台—归零。上升途中发放，强输入段转为连续低阻导通；阻断的是重复尖峰而不是直流。",
+      "families": {
+        "vin": "ramp_hold",
+        "gate": "constant"
+      },
+      "components": [
+        "default"
+      ],
+      "cases": [
+        {
+          "variant": 0,
+          "experiment": "07_regular23",
+          "label": "蓝实线 · 主例 07_regular23",
+          "parameters": "C=1 nF；Rlimit=1 kΩ；Rsense=10 Ω；B=0 V；Vin=0～8 V；Gate=0～6 V",
+          "vin_range_v": [
+            0.0,
+            8.0
+          ],
+          "gate_range_v": [
+            0.0,
+            6.0
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+#-----------------------------------------------------------
+# xsim v2023.2 (64-bit)
+# SW Build 4029153 on Fri Oct 13 20:14:34 MDT 2023
+# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+# Start of session at: Tue Oct 20 13:56:28 2026
+# Process ID: 22872
+# Current directory: E:/vivado project/AD9106/.uart_sim
+# Command line: xsim.exe -log uart_control.log -mode tcl -source {xsim.dir/uart_control_sim/xsim_script.tcl}
+# Log file: E:/vivado project/AD9106/.uart_sim/uart_control.log
+# Journal file: E:/vivado project/AD9106/.uart_sim\xsim.jou
+# Running On: Nexora, OS: Windows, CPU Frequency: 3793 MHz, CPU Physical cores: 16, Host memory: 16438 MB
+#-----------------------------------------------------------
+source xsim.dir/uart_control_sim/xsim_script.tcl
+# xsim {uart_control_sim} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART -> parser -> AD9106 SPI -> UART; init, all waveforms, mute, boundaries, errors and recovery
+$finish called at time : 7931580 ns : File "E:/vivado project/AD9106/AD9106_demo.srcs/sim_1/new/tb_uart_control.sv" Line 261
+exit
+INFO: [Common 17-206] Exiting xsim at Tue Oct 20 13:56:31 2026...

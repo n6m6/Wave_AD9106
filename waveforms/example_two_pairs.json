@@ -1,0 +1,12 @@
+{
+  "dac_clock_hz": 148500000,
+  "full_scale_v": 10,
+  "zero_code_v": 0,
+  "max_frequency_error_ppm": 1000,
+  "channels": [
+    {"channel":1,"topology":6,"mode":3,"variant":0,"signal":"vin","frequency_hz":50000,"amplitude_v":5,"pair":"A"},
+    {"channel":2,"topology":6,"mode":3,"variant":0,"signal":"gate","frequency_hz":50000,"amplitude_v":6.8,"pair":"A"},
+    {"channel":3,"topology":7,"mode":18,"variant":1,"signal":"vin","frequency_hz":100000,"amplitude_v":5,"pair":"B"},
+    {"channel":4,"topology":7,"mode":18,"variant":1,"signal":"gate","frequency_hz":100000,"amplitude_v":6,"pair":"B"}
+  ]
+}

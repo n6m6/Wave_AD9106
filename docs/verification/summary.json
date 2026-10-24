@@ -1,0 +1,83 @@
+{
+  "profile": "actual generated top, production parameters, functional clock model",
+  "simulated_time_ms": 706.66189,
+  "reply_checks": 15,
+  "initialization_checks": 2,
+  "captured_spi_writes_including_reset_test": 12022,
+  "square_tests": [
+    {
+      "frequency_khz": 100,
+      "samples": 1485,
+      "cycles_per_10us": 1,
+      "high_percent": 50.033670033670035
+    },
+    {
+      "frequency_khz": 200,
+      "samples": 1485,
+      "cycles_per_10us": 2,
+      "high_percent": 24.983164983164983
+    },
+    {
+      "frequency_khz": 300,
+      "samples": 1485,
+      "cycles_per_10us": 3,
+      "high_percent": 50.101010101010104
+    },
+    {
+      "frequency_khz": 74200,
+      "samples": 1485,
+      "cycles_per_10us": 742,
+      "high_percent": 50.033670033670035
+    }
+  ],
+  "latency_lines": [
+    "PASS TOP: reply seq=0 cmd=1 status=7, elapsed=2.773 ms, writes=24",
+    "PASS TOP: reply seq=1 cmd=1 status=0, elapsed=23.031 ms, writes=3019",
+    "PASS TOP: reply seq=2 cmd=2 status=0, elapsed=22.967 ms, writes=3025",
+    "PASS TOP: reply seq=3 cmd=3 status=0, elapsed=70.578 ms, writes=4517",
+    "PASS TOP: reply seq=4 cmd=3 status=0, elapsed=70.578 ms, writes=6009",
+    "PASS TOP: reply seq=5 cmd=3 status=0, elapsed=70.578 ms, writes=7501",
+    "PASS TOP: reply seq=6 cmd=1 status=0, elapsed=23.031 ms, writes=7509",
+    "PASS TOP: reply seq=10 cmd=1 status=2, elapsed=2.773 ms, writes=7509",
+    "PASS TOP: reply seq=11 cmd=4 status=3, elapsed=2.773 ms, writes=7509",
+    "PASS TOP: reply seq=12 cmd=3 status=4, elapsed=2.773 ms, writes=7509",
+    "PASS TOP: reply seq=13 cmd=1 status=1, elapsed=2.773 ms, writes=7509",
+    "PASS TOP: reply seq=14 cmd=1 status=5, elapsed=101.037 ms, writes=7509",
+    "PASS TOP: reply seq=15 cmd=1 status=6, elapsed=1.124 ms, writes=7509",
+    "PASS TOP: reply seq=16 cmd=3 status=0, elapsed=70.578 ms, writes=9001",
+    "PASS TOP: reply seq=18 cmd=1 status=0, elapsed=23.031 ms, writes=3019"
+  ],
+  "source_sha256": {
+    "AD9106_demo.srcs\\sources_1\\new\\AD9106.v": "d7a328c132ff61998e4e1b629c886ef66e29759934c27a0219037f2cd1b63974",
+    "AD9106_demo.srcs\\sources_1\\new\\ad9106_cmd_parser.v": "221df3b2ca9a2039c112ac863f1ff3bc8d0023d8a3b3ae1a3c17e635590ee59a",
+    "AD9106_demo.srcs\\sources_1\\new\\ad9106_spi_writer.v": "c20eb43a227dbd0ee71cece47aa8a021bc3b52900ffdfb1bb2f6f5cb66dc7a7c",
+    "AD9106_demo.srcs\\sources_1\\new\\uart_cmd_rx.v": "42d78c2e0d7b8c91bb04da3e909dbffbe3559df60dc97d7c603b6a39e7ef58e9",
+    "AD9106_demo.srcs\\sources_1\\new\\uart_cmd_tx.v": "46ecac588592ea13492867b7fe2b2ed986b4f2fbe447128c5577c8130ec5e92a",
+    "AD9106_demo.srcs\\sources_1\\bd\\design_1\\design_1.bd": "1b2541148869cffcfc773498325b9906e545fcdc9c3d28c0d22667f840e59695",
+    "AD9106_demo.gen\\sources_1\\bd\\design_1\\sim\\design_1.v": "9b43dd1117f3b36ca162df5a351249802db963b5e3055981ed89affdfa1f3c54",
+    "AD9106_demo.gen\\sources_1\\bd\\design_1\\hdl\\design_1_wrapper.v": "e35fd8a05e50b923c252e5a369e1e91977d120ec728c35c4d3b03ed0f90cd92d",
+    "AD9106_demo.srcs\\sim_1\\new\\clock_wizard_functional.sv": "cab74426f9edcce1e5ef12422d5e24f18ff0a159c220b9a768cc3feff38261a1",
+    "AD9106_demo.srcs\\sim_1\\new\\tb_clock_wizard.sv": "e82189d50a173d71ead52c6d0a25b290aa04b19a4f80a7fcc5b97cd1c14a511a",
+    "AD9106_demo.srcs\\sim_1\\new\\tb_top_uart.sv": "247be4354ecbe3aa049b7819fe7420b9d10b4cadec8d24707cf5f3bb47259c50",
+    "AD9106_demo.srcs\\sim_1\\new\\tb_uart_control.sv": "e0a5c3f394182ba7ccd19cae04ee2b42ace22c2fec7b0340f5c23032f1c96a96"
+  },
+  "limits": [
+    "Functional clock run does not verify MMCM analog behavior.",
+    "SPI checking and SRAM reconstruction do not verify DAC analog output.",
+    "UART pin/IOSTANDARD constraints are missing; see io_drc.txt."
+  ],
+  "vendor_prefix": {
+    "scope": "init, sine, triangle, 100 kHz square passed; remaining long vendor run intentionally stopped",
+    "pass_lines": [
+      "PASS TOP: actual MMCM locked, 50 MHz input -> 100 MHz system",
+      "PASS TOP: reply seq=0 cmd=1 status=7, elapsed=2.773 ms, writes=24",
+      "PASS TOP: initialization 1, 3011 writes, all 2970 SRAM samples, DAC4 five periods",
+      "PASS TOP: reply seq=1 cmd=1 status=0, elapsed=23.031 ms, writes=3019",
+      "PASS TOP: sine frequency word=0x200000 (18.5625 MHz), phase=90 deg, gain=0.5, offset=-128",
+      "PASS TOP: reply seq=2 cmd=2 status=0, elapsed=22.967 ms, writes=3025",
+      "PASS TOP: triangle step=63, gain=-1, offset=128",
+      "PASS TOP: reply seq=3 cmd=3 status=0, elapsed=70.578 ms, writes=4517",
+      "PASS TOP: square 100.0 kHz, 1 cycles/10 us, high fraction 50.0337%"
+    ]
+  }
+}

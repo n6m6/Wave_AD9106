@@ -1,0 +1,58 @@
+{
+  "frames": 450,
+  "captured_spi_writes": 3022,
+  "frame_frequency_hz": 10000.0,
+  "hold": 5,
+  "allocated_sram_words": 2970,
+  "channels": [
+    {
+      "channel": 1,
+      "start": 0,
+      "stop": 0,
+      "samples": 2970,
+      "cycles_per_frame": 0,
+      "envelope_frequency_hz": 0,
+      "min_code": 0,
+      "max_code": 0,
+      "nominal_min_v": 0.0,
+      "nominal_max_v": 0.0
+    },
+    {
+      "channel": 2,
+      "start": 0,
+      "stop": 0,
+      "samples": 2970,
+      "cycles_per_frame": 0,
+      "envelope_frequency_hz": 0,
+      "min_code": 0,
+      "max_code": 0,
+      "nominal_min_v": 0.0,
+      "nominal_max_v": 0.0
+    },
+    {
+      "channel": 3,
+      "start": 0,
+      "stop": 2969,
+      "samples": 2970,
+      "cycles_per_frame": 1,
+      "envelope_frequency_hz": 10000.0,
+      "min_code": 0,
+      "max_code": 1024,
+      "nominal_min_v": 0.0,
+      "nominal_max_v": 5.0
+    },
+    {
+      "channel": 4,
+      "start": 0,
+      "stop": 0,
+      "samples": 2970,
+      "cycles_per_frame": 0,
+      "envelope_frequency_hz": 0,
+      "min_code": 1638,
+      "max_code": 1638,
+      "nominal_min_v": 7.998046875,
+      "nominal_max_v": 7.998046875
+    }
+  ],
+  "result": "PASS: every programmed register and all allocated samples match captured SPI"
+}

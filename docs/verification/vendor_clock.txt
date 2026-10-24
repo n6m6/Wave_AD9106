@@ -1,0 +1,23 @@
+#-----------------------------------------------------------
+# xsim v2023.2 (64-bit)
+# SW Build 4029153 on Fri Oct 13 20:14:34 MDT 2023
+# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+# Start of session at: Tue Oct 20 14:07:10 2026
+# Process ID: 28628
+# Current directory: E:/vivado project/AD9106/.uart_sim/clock_vendor
+# Command line: xsim.exe -log tb_clock_wizard.log -mode tcl -source {xsim.dir/tb_clock_wizard/xsim_script.tcl}
+# Log file: E:/vivado project/AD9106/.uart_sim/clock_vendor/tb_clock_wizard.log
+# Journal file: E:/vivado project/AD9106/.uart_sim/clock_vendor\xsim.jou
+# Running On: Nexora, OS: Windows, CPU Frequency: 3793 MHz, CPU Physical cores: 16, Host memory: 16438 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_clock_wizard/xsim_script.tcl
+# xsim {tb_clock_wizard} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS CLOCK: vendor MMCM lock and 100 MHz output
+PASS CLOCK: external reset, relock and top startup state
+PASS CLOCK SUMMARY: actual generated wrapper and vendor MMCM verified
+$finish called at time : 5410 ns : File "E:/vivado project/AD9106/AD9106_demo.srcs/sim_1/new/tb_clock_wizard.sv" Line 37
+exit
+INFO: [Common 17-206] Exiting xsim at Tue Oct 20 14:07:12 2026...

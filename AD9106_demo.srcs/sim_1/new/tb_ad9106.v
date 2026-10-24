@@ -24,12 +24,13 @@ module tb_ad9106;
     localparam [14:0] REG_STOP_ADDR3  = 15'h0056;
     localparam [14:0] REG_SRAM_BASE   = 15'h6000;
 
-    localparam [23:0] EXPECT_DDS_WORD = 24'h00DCA9;
-    localparam [15:0] EXPECT_TIMEBASE = 16'h0311;
-    localparam [15:0] EXPECT_PERIOD   = 16'd297;
-    localparam integer EXPECT_SRAM_WORDS = 198;
+    localparam [23:0] EXPECT_DDS_WORD = 24'h113D33;
+    localparam [15:0] EXPECT_TIMEBASE = 16'h0111;
+    localparam [15:0] EXPECT_PERIOD   = 16'd1485;
+    localparam integer EXPECT_SQUARE_WORDS = 1485;
+    localparam integer EXPECT_SRAM_WORDS = 2970;
     localparam integer EXPECT_CFG_BASE   = 1 + EXPECT_SRAM_WORDS + 1;
-    localparam integer EXPECT_WRITES  = 239;
+    localparam integer EXPECT_WRITES  = 3011;
 
     reg clk_in = 1'b0;
     reg resetn = 1'b0;
@@ -49,11 +50,13 @@ module tb_ad9106;
     reg [31:0] spi_shift = 32'h00000000;
     reg [31:0] spi_word = 32'h00000000;
     reg [5:0]  spi_bits = 6'd0;
-    reg [14:0] wr_addr [0:255];
-    reg [15:0] wr_data [0:255];
+    reg [14:0] wr_addr [0:3015];
+    reg [15:0] wr_data [0:3015];
     reg [14:0] exp_sram_addr;
     integer wr_count = 0;
     integer i;
+    integer square_rising_edges;
+    reg [15:0] expected_square;
     realtime t0;
     realtime t1;
     realtime t2;
@@ -64,6 +67,8 @@ module tb_ad9106;
     design_1_wrapper dut (
         .clk_in           (clk_in),
         .resetn           (resetn),
+        .uart_rx_0        (1'b1),
+        .uart_tx_0        (),
         .ad9106_sclk_0    (ad9106_sclk),
         .ad9106_sdio_0    (ad9106_sdio),
         .ad9106_sdo_0     (ad9106_sdo),
@@ -170,7 +175,7 @@ module tb_ad9106;
         repeat (4) @(posedge clk_in);
         resetn = 1'b1;
 
-        repeat (2000000) begin
+        repeat (6000000) begin
             @(posedge clk_in);
             if (init_done)
                 disable timeout_watchdog;
@@ -211,11 +216,30 @@ module tb_ad9106;
             end
         end
 
-        check_write(1,      REG_SRAM_BASE + 15'd0,  16'h4000);
-        check_write(1 + 49, REG_SRAM_BASE + 15'd49, 16'h4000);
-        check_write(1 + 50, REG_SRAM_BASE + 15'd50, 16'hc000);
-        check_write(1 + 98, REG_SRAM_BASE + 15'd98, 16'hc000);
-        check_write(1 + 99, REG_SRAM_BASE + 15'd99, 16'h0000);
+        square_rising_edges = 0;
+        for (i = 0; i < EXPECT_SQUARE_WORDS; i = i + 1) begin
+            expected_square = (((i * 50) % 1485) < 743) ? 16'h4000 : 16'hc000;
+            if (wr_data[1 + i] !== expected_square) begin
+                $display("FAIL: square sample[%0d] expected 0x%04h got 0x%04h",
+                         i, expected_square, wr_data[1 + i]);
+                $finish;
+            end
+            if (i > 0 && wr_data[1 + i] == 16'h4000 &&
+                wr_data[i] == 16'hc000)
+                square_rising_edges = square_rising_edges + 1;
+        end
+        if (wr_data[1] == 16'h4000 &&
+            wr_data[EXPECT_SQUARE_WORDS] == 16'hc000)
+            square_rising_edges = square_rising_edges + 1;
+        if (square_rising_edges != 50)
+            fail("square waveform must have 50 cycles per 1485 DAC clocks");
+
+        check_write(1 + 1485, REG_SRAM_BASE + 15'd1485, 16'h0000);
+        check_write(1 + 1486, REG_SRAM_BASE + 15'd1486, 16'h0000);
+        check_write(1 + 1487, REG_SRAM_BASE + 15'd1487, 16'h0000);
+        check_write(1 + 1488, REG_SRAM_BASE + 15'd1488, 16'h02a0);
+        check_write(1 + 1782, REG_SRAM_BASE + 15'd1782, 16'h0000);
+        check_write(1 + 2969, REG_SRAM_BASE + 15'd2969, 16'h0000);
 
         check_write(1 + EXPECT_SRAM_WORDS, REG_PAT_STATUS, 16'h0000);
         check_write(EXPECT_CFG_BASE + 5,  REG_PAT_TIMEBASE, EXPECT_TIMEBASE);
@@ -223,10 +247,10 @@ module tb_ad9106;
         check_write(EXPECT_CFG_BASE + 19, REG_DDS_TW32, EXPECT_DDS_WORD[23:8]);
         check_write(EXPECT_CFG_BASE + 20, REG_DDS_TW1,  {EXPECT_DDS_WORD[7:0], 8'h00});
         check_write(EXPECT_CFG_BASE + 28, REG_WAV2_1CFG, 16'h1131);
-        check_write(EXPECT_CFG_BASE + 30, REG_START_ADDR4, 16'h0630);
-        check_write(EXPECT_CFG_BASE + 31, REG_STOP_ADDR4,  16'h0c50);
+        check_write(EXPECT_CFG_BASE + 30, REG_START_ADDR4, 16'h5cd0);
+        check_write(EXPECT_CFG_BASE + 31, REG_STOP_ADDR4,  16'hb990);
         check_write(EXPECT_CFG_BASE + 33, REG_START_ADDR3, 16'h0000);
-        check_write(EXPECT_CFG_BASE + 34, REG_STOP_ADDR3,  16'h0620);
+        check_write(EXPECT_CFG_BASE + 34, REG_STOP_ADDR3,  16'h5cc0);
         check_write(EXPECT_WRITES - 2, REG_PAT_STATUS, 16'h0001);
         check_write(EXPECT_WRITES - 1, REG_RAMUPDATE, 16'h0001);
 

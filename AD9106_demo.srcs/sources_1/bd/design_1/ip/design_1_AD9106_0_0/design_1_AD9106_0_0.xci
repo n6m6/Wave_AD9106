@@ -12,17 +12,18 @@
         "SPI_CLK_HZ": [ { "value": "1000000", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "RESET_LOW_CYCLES": [ { "value": "100000", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "RESET_HIGH_CYCLES": [ { "value": "100000", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "DDS_TUNING_WORD": [ { "value": "0x00DCA9", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
+        "DDS_TUNING_WORD": [ { "value": "0x113D33", "value_src": "user", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "DAC1_DIG_GAIN": [ { "value": "0x400", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "DAC2_DIG_GAIN": [ { "value": "0x400", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "DAC3_DIG_GAIN": [ { "value": "0x400", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "DAC4_DIG_GAIN": [ { "value": "0x400", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
-        "SRAM_HOLD": [ { "value": "\"0011\"", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
+        "SRAM_HOLD": [ { "value": "0001", "value_src": "user", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "PAT_PERIOD_BASE": [ { "value": "\"0001\"", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
-        "PATTERN_PERIOD": [ { "value": "0x0129", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
+        "PATTERN_PERIOD": [ { "value": "0x05CD", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "TRI_SAW_STEP": [ { "value": "\"000100\"", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "SQUARE_HIGH": [ { "value": "0x400", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "SQUARE_LOW": [ { "value": "0xC00", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
+        "RUNTIME_UPDATE_CYCLES": [ { "value": "100", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Component_Name": [ { "value": "design_1_AD9106_0_0", "resolve_type": "user", "usage": "all" } ]
       },
       "model_parameters": {
@@ -30,17 +31,18 @@
         "SPI_CLK_HZ": [ { "value": "1000000", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "RESET_LOW_CYCLES": [ { "value": "100000", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "RESET_HIGH_CYCLES": [ { "value": "100000", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "DDS_TUNING_WORD": [ { "value": "0x00DCA9", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
+        "DDS_TUNING_WORD": [ { "value": "0x113D33", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
         "DAC1_DIG_GAIN": [ { "value": "0x400", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
         "DAC2_DIG_GAIN": [ { "value": "0x400", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
         "DAC3_DIG_GAIN": [ { "value": "0x400", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
         "DAC4_DIG_GAIN": [ { "value": "0x400", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
-        "SRAM_HOLD": [ { "value": "\"0011\"", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
+        "SRAM_HOLD": [ { "value": "0001", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
         "PAT_PERIOD_BASE": [ { "value": "\"0001\"", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
-        "PATTERN_PERIOD": [ { "value": "0x0129", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
+        "PATTERN_PERIOD": [ { "value": "0x05CD", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
         "TRI_SAW_STEP": [ { "value": "\"000100\"", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
         "SQUARE_HIGH": [ { "value": "0x400", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
-        "SQUARE_LOW": [ { "value": "0xC00", "resolve_type": "generated", "format": "bitString", "usage": "all" } ]
+        "SQUARE_LOW": [ { "value": "0xC00", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
+        "RUNTIME_UPDATE_CYCLES": [ { "value": "100", "resolve_type": "generated", "format": "long", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "artix7" } ],
@@ -78,7 +80,14 @@
         "ad9106_trigger": [ { "direction": "out" } ],
         "ad9106_clken": [ { "direction": "out" } ],
         "init_done": [ { "direction": "out" } ],
-        "init_busy": [ { "direction": "out" } ]
+        "init_busy": [ { "direction": "out" } ],
+        "cfg_valid": [ { "direction": "in" } ],
+        "cfg_ready": [ { "direction": "out" } ],
+        "cfg_addr": [ { "direction": "in", "size_left": "14", "size_right": "0" } ],
+        "cfg_wdata": [ { "direction": "in", "size_left": "15", "size_right": "0" } ],
+        "cfg_last": [ { "direction": "in" } ],
+        "cfg_done": [ { "direction": "out" } ],
+        "cfg_rdata": [ { "direction": "out", "size_left": "15", "size_right": "0" } ]
       },
       "interfaces": {
         "ad9106_reset": {

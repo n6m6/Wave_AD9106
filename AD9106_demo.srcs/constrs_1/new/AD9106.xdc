@@ -1,3 +1,5 @@
+create_clock -period 20.000 -name clk_in -waveform {0.000 10.000} [get_ports clk_in]
+
 set_property PACKAGE_PIN J19 [get_ports clk_in]
 set_property IOSTANDARD LVCMOS33 [get_ports clk_in]
 set_property PACKAGE_PIN F13 [get_ports ad9106_trigger_0]
@@ -21,3 +23,9 @@ set_property IOSTANDARD LVCMOS33 [get_ports init_done_0]
 
 set_property PACKAGE_PIN L18 [get_ports resetn]
 set_property IOSTANDARD LVCMOS33 [get_ports resetn]
+
+set_property PACKAGE_PIN C20 [get_ports uart_tx_0]
+set_property IOSTANDARD LVCMOS33 [get_ports uart_rx_0]
+set_property IOSTANDARD LVCMOS33 [get_ports uart_tx_0]
+set_property PACKAGE_PIN A21 [get_ports uart_rx_0]
+

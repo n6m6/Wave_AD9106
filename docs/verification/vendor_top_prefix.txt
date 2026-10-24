@@ -1,0 +1,26 @@
+#-----------------------------------------------------------
+# xsim v2023.2 (64-bit)
+# SW Build 4029153 on Fri Oct 13 20:14:34 MDT 2023
+# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+# Start of session at: Tue Oct 20 13:59:25 2026
+# Process ID: 24208
+# Current directory: E:/vivado project/AD9106/.uart_sim/top
+# Command line: xsim.exe -log tb_top_uart.log -mode tcl -source {xsim.dir/tb_top_uart/xsim_script.tcl}
+# Log file: E:/vivado project/AD9106/.uart_sim/top/tb_top_uart.log
+# Journal file: E:/vivado project/AD9106/.uart_sim/top\xsim.jou
+# Running On: Nexora, OS: Windows, CPU Frequency: 3793 MHz, CPU Physical cores: 16, Host memory: 16438 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_top_uart/xsim_script.tcl
+# xsim {tb_top_uart} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS TOP: actual MMCM locked, 50 MHz input -> 100 MHz system
+PASS TOP: reply seq=0 cmd=1 status=7, elapsed=2.773 ms, writes=24
+PASS TOP: initialization 1, 3011 writes, all 2970 SRAM samples, DAC4 five periods
+PASS TOP: reply seq=1 cmd=1 status=0, elapsed=23.031 ms, writes=3019
+PASS TOP: sine frequency word=0x200000 (18.5625 MHz), phase=90 deg, gain=0.5, offset=-128
+PASS TOP: reply seq=2 cmd=2 status=0, elapsed=22.967 ms, writes=3025
+PASS TOP: triangle step=63, gain=-1, offset=128
+PASS TOP: reply seq=3 cmd=3 status=0, elapsed=70.578 ms, writes=4517
+PASS TOP: square 100.0 kHz, 1 cycles/10 us, high fraction 50.0337%

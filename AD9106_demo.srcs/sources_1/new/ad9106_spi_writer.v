@@ -11,6 +11,9 @@ module ad9106_spi_writer #(
     input  wire        start,
     input  wire [14:0] addr,
     input  wire [15:0] wdata,
+    input  wire        read_en,
+    input  wire        sdo,
+    output reg [15:0]  rdata,
     output reg         busy,
     output reg         done,
     output reg         sclk,
@@ -32,17 +35,19 @@ module ad9106_spi_writer #(
             shifter     <= 32'h00000000;
             bit_index   <= 6'd31;
             div_counter <= 32'd0;
+            rdata       <= 16'd0;
         end else begin
             done <= 1'b0;
 
             if (start && !busy) begin
-                shifter     <= {1'b0, addr, wdata}; // AD9106 write command.
+                shifter     <= {read_en, addr, wdata};
+                rdata       <= 16'd0;
                 bit_index   <= 6'd31;
                 div_counter <= SPI_HALF_DIV - 1;
                 busy        <= 1'b1;
                 cs_n        <= 1'b0;
                 sclk        <= 1'b0;
-                sdio        <= 1'b0; // Write bit, first bit of the 32-bit transfer.
+                sdio        <= read_en;
             end else if (busy) begin
                 if (div_counter != 32'd0) begin
                     div_counter <= div_counter - 32'd1;
@@ -51,6 +56,8 @@ module ad9106_spi_writer #(
 
                     if (!sclk) begin
                         sclk <= 1'b1;
+                        if (bit_index < 16)
+                            rdata <= {rdata[14:0], sdo};
                     end else begin
                         sclk <= 1'b0;
 

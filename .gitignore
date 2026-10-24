@@ -19,6 +19,9 @@
 
 # Simulator work directories
 xsim.dir/
+.uart_sim/
+tools/__pycache__/
+.venv/
 .jou
 .log
 
