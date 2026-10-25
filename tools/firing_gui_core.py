@@ -8,6 +8,24 @@ from ad9106_firing import ROOT, STATUS, frame, decode_reply
 
 def load_catalog():
     catalog=json.loads((ROOT/"waveforms/firing_catalog.json").read_text(encoding="utf-8"))
+    for entry in catalog["modes"]:
+        if entry["mode"]==12:
+            entry["description"]="Vin 快脉冲、慢脉冲分开测试：选择一个实验变体，设置内部方波频率、占空比和脉冲数量。Vgate 恒压。"
+            source=entry["cases"][0]
+            entry["components"]=["default"]
+            entry["cases"]=[dict(source,variant=i,experiment=group+"_pulses",source_experiment=source["experiment"],label=label,pulse_group=group,
+                                 gate_range_v=[source["gate_range_v"][1]]*2)
+                            for i,group,label in ((0,"near","快脉冲"),(1,"far","慢脉冲"))]
+        if entry["mode"]==11:
+            entry["description"]="Vin 方波脉冲列，Vgate 连续正弦。Vin 内部频率、占空比及 Vgate 正弦频率独立可调；配对通道的实验变体同步切换。"
+        if entry["mode"] in (5,7):
+            entry["description"]=("Vgate 两段方波" if entry["topology"]==7 else "Vgate 斜坡接保持平台") if entry["mode"]==5 else "Vin 斜坡接保持平台，Vgate 恒压"
+            entry["description"]+="；两段电压、两段持续时间独立设置。"
+        if entry["mode"]==6:
+            entry["description"]="Vgate 斜坡：开始电压、结束电压和持续时间可调；Vin 为方波窗口。"
+        if entry["mode"]==23:
+            entry["name"]="Excitability block"
+            entry["title"]="23 兴奋性阻断"
     for topology in (3,5,6,7):
         catalog["modes"].append({"topology":topology,"mode":24,"name":"Static scan",
             "description":"Vgate 恒压，Vin 单个可调宽度方波；当前每次触发连续执行两遍单元。",

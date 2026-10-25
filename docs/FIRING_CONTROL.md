@@ -50,16 +50,16 @@ python tools/ad9106_firing.py program --scene waveforms/example_two_pairs.json -
 | --- | --- | --- |
 | 1 | 持续放电 | 正阶跃 Vin；Gate 工作平台 |
 | 2 | 起始放电 | 正阶跃 Vin；不同幅值主例/对照用 variant |
-| 3 | 持续簇发 | Vin 保持；Gate 多窗口 |
+| 3 | 持续簇发 | Vin 保持；Gate 脉宽、间隔及脉冲数量独立可调 |
 | 4 | 起始簇发 | Vin 保持；Gate 起始窗口 |
-| 5 | 混合模式 | Vin 保持；Gate 斜坡/阶梯变化，按拓扑区分 |
-| 6 | 频率适应 | Vin 保持；Gate 斜坡变化 |
-| 7 | I 类兴奋性 | Vin 斜坡保持 |
+| 5 | 混合模式 | Vin 保持；Gate 斜坡/阶梯变化，按拓扑区分；两段电压和时长独立设置 |
+| 6 | 频率适应 | Vin 保持；Gate 斜坡起止电压、持续时间可调 |
+| 7 | I 类兴奋性 | Vin 斜坡接平台；两段电压和时长独立设置 |
 | 8 | II 类兴奋性 | Vin 工作平台；近阈值幅值对照用 variant |
 | 9 | 发放延迟 | 不同电压 Vin 探测脉冲分别列为 variant |
 | 10 | 阈下振荡 | Vin 平台；Gate 正弦偏置或平坦对照 |
-| 11 | 共振器 | Vin 脉冲列/单脉冲/重复列；Gate 正弦或窗口；对齐/错相等用 variant |
-| 12 | 积分器 | Vin 近/远间隔脉冲组；`sequence/near/far/single`；拓扑 6 Gate 含向下缺口 |
+| 11 | 共振器 | Vin 方波内部频率、占空比、数量可调；Gate 正弦频率独立；对齐/错相等用 variant |
+| 12 | 积分器 | variant=0 快脉冲、variant=1 慢脉冲，分开测试；内部频率、占空比、数量可调；Gate 恒压 |
 | 13 | 反跳单发 | 负 Vin 后释放；保留原文正偏置对照 |
 | 14 | 反跳簇发 | 负 Vin 后释放；对照用 variant |
 | 15 | 阈值可变性 | Vin 探测序列配合多档 Gate；`sequence/low/mid/high` |
@@ -70,7 +70,7 @@ python tools/ad9106_firing.py program --scene waveforms/example_two_pairs.json -
 | 20 | 抑制诱发簇发 | 负 Vin 分组脉冲 |
 | 21 | 全或无 | 多档 Vin 探测序列；`sequence/low/mid/high` |
 | 22 | 不应期 | 双脉冲不同间隔及单脉冲对照用 variant；`pair/first/second` |
-| 23 | 去极化阻滞 | Vin 斜坡保持；不同幅值实验用 variant |
+| 23 | 兴奋性阻断 | Vin 斜坡保持；不同幅值实验用 variant |
 
 未列出 component 的模式使用 `default`。`near/far` 保留该组内部时序；单选 `low/mid/high` 将所选电平的探测事件移到模板的首个探测位置。Gate 工作平台默认采用直流源，不反复播放实验启动时的一次性上电过程。拓扑 6 的默认 23 组预览见 [模板总览](firing_verification/topology6_template_overview.png)。
 
@@ -91,9 +91,20 @@ JSON 顶层包含 `dac_clock_hz`、`full_scale_v`、`zero_code_v`、`max_frequen
 | `enabled` | false 时该通道输出零码 |
 | `parameters` | 修改下述参考模板参数 |
 
-例如负 Vin 的 `amplitude_v:5` 表示最低约 −5 V；偏置会进一步平移整个波形。正弦 Gate 的载波频率在 `plan.json` 的 `sine_carrier_hz` 中单独报告，直流 Gate 的实际重复频率报告为 0。这里的频率不是神经元输出的发放频率，也不是脉冲列内部的脉冲重复频率。改变包络频率会等比例缩放脉宽、间隔和斜坡时长。
+例如负 Vin 的 `amplitude_v:5` 表示最低约 −5 V；偏置会进一步平移整个波形。正弦 Gate 的载波频率在 `plan.json` 的 `sine_carrier_hz` 中单独报告，直流 Gate 的实际重复频率报告为 0。这里的频率不是神经元输出的发放频率，也不是脉冲列内部的脉冲重复频率。改变包络频率会等比例缩放旧参考模板的脉宽、间隔和斜坡时长；下面新增的实际时间字段会补偿该缩放，保持所填时间。
 
 `parameters` 使用原图参考坐标的 us/V 单位，支持 `period_us/start_us/width_us/rise_us/fall_us/ramp_us/gap_us/pulse_period_us/pulse_count/gate_sine_period_us/gate_floor_v/gate_initial_v/gate_final_v/gate_baseline_v/levels_v`。各参数用于对应的波形族，例如 `levels_v` 是 15/21 类的三档电压，`gap_us` 用于第 22 类，`gate_sine_period_us` 用于正弦 Gate；不是每个模式都使用每个字段。第 22 类间隔从前一脉冲下降沿起点计量，包含下降时间。
+
+新增直接参数（保留原配置结构）：
+
+| 字段 | 含义 |
+| --- | --- |
+| `vin_width_us` / `gate_width_us` | 各路实际脉宽，含边沿；覆盖旧共用 `width_us`。Gate 恒压或正弦时不使用 Gate 脉宽 |
+| `pulse_gap_us` | 03/12/20/22 的实际基线等待时间；脉宽与间隔相加才是起始到起始周期 |
+| `vin_frequency_khz` | 11 的实际 Vin 脉冲频率；与旧 `pulse_period_us` 二选一 |
+| `level_low_v` / `level_mid_v` / `level_high_v` | 15 的 Gate、21 的 Vin 三档独立名义电压；不乘 `amplitude_v`，仍叠加 `offset_v`；允许只覆盖其中部分档位 |
+
+实际 μs 在波形生成器内乘以 `period_us × frequency_hz / 1e6` 转回参考坐标，原采样编译与串口协议不变。独立间隔与旧 `pulse_period_us`（22 为旧 `gap_us`）不能同时填写；网页会在使用新字段时清除相冲突的旧字段。03/20 的脉冲数默认 3，也可沿用 `pulse_count` 修改。12 的 Gate 在全部变体中均为恒压；旧变体名称保留供历史场景识别，不能据此推断仍有 Gate 缺口。
 
 后端按用户说明支持 ±10 V；本工程先采用名义换算 `V = zero_code_v + signed_code × full_scale_v / 2048`，默认 zero=0、full_scale=10。这是对板级传输关系的假设，需用实测校准，当前没有后端放大/偏置原理图。12 位码范围 −2048～2047，名义步进约 4.883 mV，正最大值约 +9.995 V。请求采样电压超出 ±10 V 会拒绝；原图 +12 V 激励默认整体缩放为峰值 10 V，计划中会提示。原文 3.5082/3.5085 V 等相差 0.3 mV 的对照，在固定 ±10 V 量程下可能得到相同数字码，不能保证保留该实验差异。
 

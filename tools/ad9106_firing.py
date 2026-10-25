@@ -11,7 +11,7 @@ from operator import xor
 from pathlib import Path
 
 from ad9106_uart import decode_reply, STATUS
-from firing_waveforms import make_waveform, select_entry
+from firing_waveforms import make_waveform, select_entry, absolute_levels
 
 ROOT=Path(__file__).resolve().parents[1]
 HARDWARE_PATTERN_REPEATS=2
@@ -143,7 +143,7 @@ def compile_scene(config,catalog,_compact=False):
         offset=float(binding.get("offset_v",0)); phase=float(binding.get("phase_deg",0))/360
         if not all(math.isfinite(x) for x in (amplitude,offset,phase)) or amplitude<0:
             raise ValueError("Invalid amplitude/offset/phase")
-        scale=amplitude/reference_peak if reference_peak else 0
+        scale=1 if absolute_levels(binding) else amplitude/reference_peak if reference_peak else 0
         row={"channel":channel,"wave":wave,"entry":entry,"case":case,"binding":binding,
              "frequency":frequency,"scale":scale,"offset":offset,"phase":phase,
              "amplitude_v":amplitude,"reference_peak_v":reference_peak}
@@ -151,13 +151,14 @@ def compile_scene(config,catalog,_compact=False):
         if binding.get("pair"): pairs.setdefault(str(binding["pair"]),[]).append(row)
     for name,rows in pairs.items():
         if len(rows)!=2 or {r["binding"]["signal"] for r in rows}!={"vin","gate"}:
-            raise ValueError("Pair {} needs one Vin and one Gate channel".format(name))
+            raise ValueError("配对 {} 未配对成功：需要恰好一条启用的 Vin 和一条启用的 Vgate；单路测试请将配对设为“无”".format(name))
         keys=("topology","mode","variant","component","frequency_hz","phase_deg")
         if int(rows[0]["binding"]["mode"])!=24: keys+=("parameters",)
         for key in keys:
             default={"variant":0,"component":rows[0]["entry"]["components"][0],"parameters":{},"phase_deg":0}.get(key)
             if rows[0]["binding"].get(key,default)!=rows[1]["binding"].get(key,default):
-                raise ValueError("Pair {} mismatch in {}".format(name,key))
+                label={"topology":"拓扑","mode":"模式","variant":"实验变体","component":"序列分段","frequency_hz":"包络频率","phase_deg":"相位","parameters":"时序参数"}[key]
+                raise ValueError("配对 {} 的两路{}不一致，请同步配对设置".format(name,label))
     active=[r for r in prepared if r["wave"].constant is None and r["scale"]!=0]
     static_active=[r for r in active if int(r["binding"]["mode"])==24]
     if static_active and (len(static_active)!=len(active) or len({r["frequency"] for r in static_active})!=1):
@@ -369,7 +370,8 @@ def main():
             p.add_argument("--frequency",type=float,required=True); p.add_argument("--amplitude",type=float)
             p.add_argument("--offset",type=float,default=0); p.add_argument("--phase",type=float,default=0)
     args=parser.parse_args()
-    catalog=json.loads((ROOT/"waveforms/firing_catalog.json").read_text(encoding="utf-8"))
+    from firing_gui_core import load_catalog
+    catalog=load_catalog()
     try:
         if args.command=="abort":
             send_abort(args.port,args.baud); return

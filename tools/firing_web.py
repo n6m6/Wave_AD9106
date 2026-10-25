@@ -14,7 +14,7 @@ from urllib.parse import urlsplit, parse_qs
 from ad9106_firing import ROOT, compile_scene, export_plan, send_abort, send_plan, send_retrigger
 from ad9106_diagnostics import read_registers
 from firing_gui_core import available_ports, load_catalog, load_scene, probe_device, save_scene
-from firing_waveforms import make_waveform
+from firing_waveforms import make_waveform, absolute_levels
 
 ASSETS=Path(__file__).resolve().parent/"firing_web"
 ASSET_TYPES={"/":"index.html","/app.js":"app.js","/style.css":"style.css"}
@@ -67,7 +67,7 @@ def public_preview(scene,catalog):
                 if not all(math.isfinite(v) for v in (frequency,amplitude,offset,phase)) or frequency<=0:
                     raise ValueError("频率、幅值或偏移无效")
                 peak=max(abs(v) for v in case[binding["signal"]+"_range_v"])
-                scale=amplitude/peak if peak else 0
+                scale=1 if absolute_levels(binding) else amplitude/peak if peak else 0
                 samples=[wave.value(i/699+phase)*scale+offset for i in range(700)]
                 channels.append({"channel":number,"source":"template","signal":binding["signal"],
                     "topology":binding["topology"],"mode":binding["mode"],
