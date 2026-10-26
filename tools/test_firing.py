@@ -130,13 +130,13 @@ class FiringTests(unittest.TestCase):
         self.assertEqual(fast.value(60/200),5)
         self.assertAlmostEqual(slow.value(60/200),2.5)
 
-    def test_negative_release_and_gate_notches(self):
+    def test_negative_release_and_integrator_constant_gate(self):
         wave,_,_=make_waveform(CATALOG,binding(13))
         self.assertEqual(wave.value(40/160),-5)
         self.assertEqual(wave.value(120/160),0)
         gate,_,_=make_waveform(CATALOG,binding(12,"gate"))
         self.assertEqual(gate.value(19/210),7.1)
-        self.assertEqual(gate.value(20.1/210),0)
+        self.assertEqual(gate.value(20.1/210),7.1)
         self.assertEqual(gate.value(20.8/210),7.1)
 
     def test_sine_carrier_is_continuous(self):
@@ -158,7 +158,7 @@ class FiringTests(unittest.TestCase):
         self.assertEqual(plan["sram_words"],3960)
         self.assertEqual(plan["hold"],3)
         cfg["channels"][1]["phase_deg"]=90
-        with self.assertRaisesRegex(ValueError,"Pair"): compile_scene(cfg,CATALOG)
+        with self.assertRaisesRegex(ValueError,"配对.*相位"): compile_scene(cfg,CATALOG)
 
     def test_channel_assignment_is_not_fixed(self):
         for channel in (1,2,3,4):

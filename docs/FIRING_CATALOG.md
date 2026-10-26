@@ -4,6 +4,8 @@
 
 variant 从 0 开始；不同实验曲线分别编号。sequence 表示同一输入中的多幅度/近远间隔序列；low/mid/high、near/far/single、first/second 可分别选择。
 
+**当前上位机修正：**模式 11 为 Vin 方波、Vgate 正弦；模式 12 使用 Vgate 恒压，快/慢脉冲分为两个独立变体；模式 23 名称为“兴奋性阻断”。下文是历史图文目录，旧分组、名称及 Gate 脉冲/缺口不代表当前输出协议，相应响应结论也不能用于预测修改后的实测结果；仿真工程未修改。当前参数操作见 [FIRING_GUI.md](FIRING_GUI.md)。
+
 原始 CSV、RAW、input.json 未随 HTML 提供。默认时序为图文重建模板，不能声称精确重现实验。
 
 ## 拓扑 3 / 01 Tonic spiking
