@@ -4,9 +4,10 @@ The SPI clock stays at 1 MHz. Timing below is a conservative budget for nine
 32-bit writes including RAMUPDATE and the existing 1 us update wait.
 """
 import math
+import bisect
 from fractions import Fraction
 from ad9106_firing import voltage_code, common_frequency, encode_words, HARDWARE_PATTERN_REPEATS
-from firing_waveforms import make_waveform
+from firing_waveforms import make_waveform, binding_frequency, binding_phase, binding_time_offset
 
 FPGA_HZ=100000000
 MIN_EVENT_TICKS=30000
@@ -25,7 +26,7 @@ def compile_basic_scene(config,catalog):
         used.add(ch)
         if not b.get('enabled',True): continue
         wave,entry,case=make_waveform(catalog,b)
-        mode=int(b['mode']); freq=float(b['frequency_hz']); amp=float(b.get('amplitude_v',1)); offset=float(b.get('offset_v',0)); phase=float(b.get('phase_deg',0))
+        mode=int(b['mode']); exact_freq=binding_frequency(b) if wave.constant is None else Fraction(1000); freq=float(exact_freq); amp=float(b.get('amplitude_v',1)); offset=float(b.get('offset_v',0)); phase=binding_phase(b,exact_freq)*360 if wave.constant is None else 0
         if not all(math.isfinite(x) for x in (freq,amp,offset,phase)) or freq<=0 or amp<0:
             raise ValueError('Invalid standard waveform parameters')
         if mode not in (25,26) and wave.constant is None:
@@ -33,9 +34,8 @@ def compile_basic_scene(config,catalog):
         if b.get('signal') not in ('vin','gate'): raise ValueError('signal must be vin or gate')
         if mode in (25,26):
             voltage_code(offset+amp,fs,zero); voltage_code(offset-amp,fs,zero)
-        if mode==25 and phase%360:
-            raise ValueError('标准方波当前要求相位为 0°；不同占空比的组合仍需通过事件间隔检查')
-        r=dict(binding=b,channel=ch,mode=mode,frequency=freq,amplitude=amp,offset=offset,phase=phase,
+        r=dict(binding=b,channel=ch,mode=mode,frequency=freq,exact_frequency=exact_freq,amplitude=amp,offset=offset,phase=phase,
+               time_offset_us=binding_time_offset(b,exact_freq) if wave.constant is None else 0,
                duty=float(b.get('parameters',{}).get('duty_percent',50))/100,
                wave=wave,constant=None)
         if mode not in (25,26) or amp==0:
@@ -46,20 +46,18 @@ def compile_basic_scene(config,catalog):
     for name,rs in pairs.items():
         if len(rs)!=2 or {r['binding']['signal'] for r in rs}!={'vin','gate'}:
             raise ValueError('Pair {} needs Vin and Gate'.format(name))
-        if rs[0]['frequency']!=rs[1]['frequency']:
-            raise ValueError('配对通道频率必须一致')
     dynamic=[r for r in rows if r['constant'] is None]
     sine=[r for r in dynamic if r['mode']==26]
     if len({r['frequency'] for r in sine})>1:
-        raise ValueError('AD9106 多路 DDS 正弦共用一个频率；各路幅值、偏移及相位可分别设置')
-    base=common_frequency([Fraction(str(r['frequency'])) for r in dynamic]) if dynamic else Fraction(1000)
+        raise ValueError('AD9106 多路 DDS 正弦共用一个频率；各路幅值、电压偏移及时间偏移可分别设置')
+    base=common_frequency([r['exact_frequency'] for r in dynamic]) if dynamic else Fraction(1000)
     # Round the common period upward so finite DDS cycles cannot be clipped.
     tw=round(sine[0]['frequency']/clock*(1<<24)) if sine else 0
-    if sine and not 1<=tw<=0x7fffff: raise ValueError('DDS frequency is out of range')
+    if sine and not 1<=tw<=0x7fffff: raise ValueError('DDS 正弦频率超出范围')
     actual_sine=tw*clock/(1<<24) if sine else 0
     if sine and abs(actual_sine/sine[0]['frequency']-1)*1e6>ppm:
-        raise ValueError('DDS 频率量化误差超过当前允许值')
-    cycles={r['channel']:int(Fraction(str(r['frequency']))/base) for r in dynamic}
+        raise ValueError('DDS 计时量化误差超过当前允许值')
+    cycles={r['channel']:int(r['exact_frequency']/base) for r in dynamic}
     if any(n>65535 for n in cycles.values()): raise ValueError('公共周期内 DDS 周期数超过寄存器范围')
     target=clock/float(base)
     # Include the trigger-to-pattern latency and DAC/FPGA clock rounding margin.
@@ -73,21 +71,25 @@ def compile_basic_scene(config,catalog):
     end=START_TICKS+frame_ticks*HARDWARE_PATTERN_REPEATS
     # Events use a single commit for all four channels. Unchanged levels are
     # staged again to keep timing independent of which channels have an edge.
-    times={START_TICKS,end}; edges={}
+    times={START_TICKS,end}; edges={}; initial_levels={}
     for r in dynamic:
         if r['mode']!=25: continue
         count=cycles[r['channel']]*HARDWARE_PATTERN_REPEATS
-        if count>31: raise ValueError('标准方波公共周期内周期数过多，请使用更接近的通道频率')
+        if count>31: raise ValueError('标准方波公共周期内周期数过多，请使用更接近的单周期时长')
         period=frame_ticks/cycles[r['channel']]
-        for i in range(count):
-            rise=START_TICKS+round(i*period); fall=START_TICKS+round((i+r['duty'])*period)
-            if not rise<fall<START_TICKS+round((i+1)*period): raise ValueError('方波脉宽低于计时分辨率')
-            times.update((rise,fall))
-            edges.setdefault(rise,{})[r['channel']]=True
-            edges.setdefault(fall,{})[r['channel']]=False
+        delay=(r['time_offset_us']*FPGA_HZ/1e6 if 'time_offset_us' in r['binding'] else -r['phase']/360*period)%period
+        initial_levels[r['channel']]=((-delay)%period)<r['duty']*period
+        square_edges={START_TICKS:initial_levels[r['channel']]}
+        for i in range(-1,count+1):
+            rise=START_TICKS+round(i*period+delay); fall=START_TICKS+round((i+r['duty'])*period+delay)
+            if not rise<fall<START_TICKS+round((i+1)*period+delay): raise ValueError('方波脉宽低于计时分辨率')
+            for t,high in ((rise,True),(fall,False)):
+                if START_TICKS<=t<end:
+                    times.add(t); edges.setdefault(t,{})[r['channel']]=high; square_edges[t]=high
+        r['square_edges']=sorted(square_edges.items())
     times=sorted(times)
     if len(times)>64 or any(b-a<MIN_EVENT_TICKS for a,b in zip([0]+times,times)):
-        raise ValueError('方波切换过密：当前四路 SPI 提交至少需要 300 µs 间隔。1 kHz 可用相同 50% 占空比；请降低频率或调整占空比组合，不会自动拉宽脉冲')
+        raise ValueError('方波切换过密：当前四路 SPI 提交至少需要 300 µs 间隔。1000 μs 单周期可用相同 50% 占空比；请增大单周期时长或调整占空比组合，不会自动拉宽脉冲')
     channels=[]; gains={}; offsets={}; constants={}; sources={}; phases={}
     for ch in range(1,5):
         r=next((r for r in rows if r['channel']==ch),None)
@@ -99,7 +101,8 @@ def compile_basic_scene(config,catalog):
         if source=='dds' and r['amplitude']>0 and gains[ch]==0: raise ValueError('正弦幅值低于数字增益分辨率')
         offsets[ch]=voltage_code(r['offset'],fs,zero) if source=='dds' else 0
         constants[ch]=r['constant'] or 0; sources[ch]=0x32 if source=='dds' else 1
-        signed_phase=(r['phase']+180)%360-180
+        phase=(-r['time_offset_us']*actual_sine*360/1e6 if source=='dds' and 'time_offset_us' in r['binding'] else r['phase'])
+        signed_phase=(phase+180)%360-180
         phases[ch]=round(signed_phase/360*65535)&65535
         f=actual_sine if source=='dds' else cycles.get(ch,0)/frame_s if source=='fpga_square' else 0
         amp=gains[ch]/1024*fs if source=='dds' else r['amplitude']
@@ -108,15 +111,18 @@ def compile_basic_scene(config,catalog):
         size=1000
         phase_signed=phases[ch] if phases[ch]<32768 else phases[ch]-65536
         if source=='dds': values=[voltage_code(off+amp*math.sin(2*math.pi*f*i*frame_s/size+phase_signed*2*math.pi/65535),fs,zero) for i in range(size)]
-        elif source=='fpga_square': values=[voltage_code(off+(amp if (i*cycles[ch]/size)%1<r['duty'] else -amp),fs,zero) for i in range(size)]
+        elif source=='fpga_square':
+            edge_times=[t for t,_ in r['square_edges']]
+            values=[voltage_code(off+(amp if r['square_edges'][bisect.bisect_right(edge_times,START_TICKS+round(i*frame_ticks/size))-1][1] else -amp),fs,zero) for i in range(size)]
         else: values=[r['constant']]
         channels.append(dict(channel=ch,source=source,signal=r['binding']['signal'],topology=r['binding']['topology'],mode=r['mode'],
             frequency_hz=f,requested_frequency_hz=r['frequency'],cycles_per_frame=cycles.get(ch,0),
             samples=values,constant_code=constants[ch],min_code=min(values),max_code=max(values),
             nominal_min_v=zero+min(values)*fs/2048,nominal_max_v=zero+max(values)*fs/2048,
             snapped_short_plateaus=0,preview_step_us=frame_s*1e6/size,phase_word=phases[ch],
+            time_offset_us=r['time_offset_us'],
             duty_percent=r['duty']*100 if source=='fpga_square' else None))
-    events=[]; levels={}
+    events=[]; levels=dict(initial_levels)
     for t in times:
         levels.update(edges.get(t,{}))
         codes={ch:constants[ch] for ch in range(1,5)}

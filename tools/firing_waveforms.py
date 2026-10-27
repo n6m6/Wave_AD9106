@@ -16,8 +16,38 @@ PERIOD_US = {1:160,2:160,3:220,4:220,5:220,6:220,7:200,8:350,9:100,
 
 LEVEL_KEYS = ("level_low_v", "level_mid_v", "level_high_v")
 EXTRA_PARAMETERS = {"vin_width_us", "gate_width_us", "pulse_gap_us", "vin_frequency_khz",
-                    "vin_duty_percent", "gate_frequency_khz", "first_stage_us", "second_stage_us",
+                    "rise_time_us", "fall_time_us",
+                    "vin_duty_percent", "gate_frequency_khz", "vin_period_us", "gate_period_us", "first_stage_us", "second_stage_us",
                     "stage1_voltage_v", "stage2_voltage_v", *LEVEL_KEYS}
+
+
+def positive_time(value, label):
+    """Keep decimal times rational, including reciprocals imported from old scenes."""
+    try:
+        number=float(value)
+        if isinstance(value,bool) or not math.isfinite(number) or number<=0: raise ValueError()
+        result=Fraction(str(value)).limit_denominator(1000000000)
+        if result<=0: raise ValueError()
+        return result
+    except (ValueError, TypeError, OverflowError):
+        raise ValueError(label+"必须是大于 0 的有限数值") from None
+
+
+def binding_frequency(binding, default=None):
+    """Compiler-only frequency; new scenes store the actual duration in microseconds."""
+    if "duration_us" in binding:
+        frequency=1000000/positive_time(binding["duration_us"],"时窗 / 单周期时长")
+        if "frequency_hz" in binding and not math.isclose(float(binding["frequency_hz"]),float(frequency),rel_tol=1e-12):
+            raise ValueError("时长与旧版频率字段不一致，请仅保留 duration_us")
+        return frequency
+    value=binding.get("frequency_hz",default)
+    if value is None: raise ValueError("缺少时窗 / 单周期时长 duration_us")
+    try:
+        frequency=Fraction(str(value))
+        if frequency<=0: raise ValueError()
+        return frequency
+    except (ValueError, TypeError, ZeroDivisionError):
+        raise ValueError("时窗 / 单周期时长必须是大于 0 的有限数值") from None
 
 
 def absolute_levels(binding):
@@ -28,6 +58,49 @@ def absolute_levels(binding):
     if (mode,signal) in ((5,"gate"),(7,"vin")):
         return any(key in params for key in ("stage1_voltage_v","stage2_voltage_v","gate_initial_v","gate_final_v"))
     return mode==6 and signal=="gate" and any(key in params for key in ("gate_initial_v","gate_final_v"))
+
+
+def binding_time_offset(binding,frequency=None):
+    """Positive microseconds delay the periodic waveform; old angles advanced it."""
+    frequency=float(binding_frequency(binding) if frequency is None else frequency)
+    def finite(value):
+        try:
+            result=float(value)
+            if isinstance(value,bool) or not math.isfinite(result): raise ValueError()
+            return result
+        except (ValueError,TypeError,OverflowError):
+            raise ValueError("时间偏移必须是有限数值（正数延后，负数提前）") from None
+    old=-finite(binding.get("phase_deg",0))/360/frequency*1e6
+    if "time_offset_us" not in binding: return old
+    value=finite(binding["time_offset_us"])
+    if "phase_deg" in binding and not math.isclose(value,old,rel_tol=1e-12,abs_tol=1e-10):
+        raise ValueError("时间偏移与旧相位字段不一致，请仅保留 time_offset_us")
+    return value
+
+
+def binding_phase(binding,frequency=None):
+    frequency=float(binding_frequency(binding) if frequency is None else frequency)
+    offset=binding_time_offset(binding,frequency)
+    return -offset*frequency/1e6 if "time_offset_us" in binding else float(binding.get("phase_deg",0))/360
+
+
+def constant_output(topology,mode,signal,case):
+    """Semantic DC channels, independent of leftover timing fields in old scenes."""
+    if mode>24: return False
+    if case[signal+"_range_v"]==[0,0]: return True
+    if signal!="gate": return False
+    if mode in (1,2,7,8,9,12,13,14,17,19,20,21,22,23,24): return True
+    if mode==18 and topology==3: return True
+    return mode==10 and "flat" in case.get("source_experiment",case["experiment"]).lower()
+
+
+def align_resonator_gate(vin,gate,vin_frequency,gate_frequency,peak):
+    """Anchor paired Gate to Vin in physical time, not copied template parameters."""
+    if not gate.sine_period_us or len(vin.points)<5: return
+    center=(vin.points[1][0]+vin.points[4][0])/2
+    origin=center/vin.period_us/float(vin_frequency)*float(gate_frequency)*gate.period_us
+    period=gate.sine_period_us
+    gate.analytic=lambda t:peak*.5*(1+math.cos(2*math.pi*(t-origin)/period))
 
 
 class Waveform:
@@ -41,7 +114,7 @@ class Waveform:
         self.sine_period_us = sine_period
         self.continuity_multiple = (Fraction(str(period))/Fraction(str(sine_period))).denominator if sine_period else 1
         if self.points and (self.points[0][0] < 0 or self.points[-1][0] > period+1e-8):
-            raise ValueError("波形超出当前时窗：请缩短各段时间，或降低包络频率以扩大时窗")
+            raise ValueError("波形超出当前时窗：请缩短各段时间，或增大整组时窗时长")
 
     def value(self, phase):
         if self.constant is not None: return self.constant
@@ -94,6 +167,8 @@ def make_waveform(catalog, binding):
         return Waveform(1000,points=[(0,1),(edge,1),(edge,-1),(1000,-1)]),entry,case
     signal=binding["signal"].lower()
     if signal not in ("vin","gate"): raise ValueError("signal must be vin or gate")
+    if constant_output(topology,mode,signal,case):
+        return Waveform(PERIOD_US.get(mode,100),constant=case[signal+"_range_v"][1]),entry,case
     component=binding.get("component",entry["components"][0])
     if component not in entry["components"]: raise ValueError("Invalid component for this mode")
     parameters=binding.get("parameters",{})
@@ -111,10 +186,9 @@ def make_waveform(catalog, binding):
     if period<=0: raise ValueError("period_us must be positive")
     # Keep the old envelope/compiler unchanged. New width/gap controls accept
     # actual microseconds and are converted into its reference coordinates.
-    frequency=float(binding.get("frequency_hz",1e6/period))
-    if not math.isfinite(frequency) or frequency<=0: raise ValueError("frequency_hz must be positive and finite")
+    frequency=float(binding_frequency(binding,1e6/period))
     time_factor=period*frequency/1e6
-    for key in ("vin_width_us","gate_width_us","vin_frequency_khz","gate_frequency_khz","first_stage_us","second_stage_us"):
+    for key in ("vin_width_us","gate_width_us","vin_frequency_khz","gate_frequency_khz","vin_period_us","gate_period_us","first_stage_us","second_stage_us"):
         if key in parameters and float(parameters[key])<=0: raise ValueError(key+" must be positive")
     if "pulse_gap_us" in parameters and float(parameters["pulse_gap_us"])<0:
         raise ValueError("脉冲间隔不能为负数")
@@ -124,7 +198,17 @@ def make_waveform(catalog, binding):
     if "vin_duty_percent" in parameters:
         if mode not in (11,12) or not 0<float(parameters["vin_duty_percent"])<100:
             raise ValueError("模式 11、12 的 Vin 占空比必须在 0～100% 之间")
-    if "gate_frequency_khz" in parameters and mode!=11: raise ValueError("Vgate 正弦频率用于模式 11")
+    if "gate_frequency_khz" in parameters and mode not in (10,11): raise ValueError("Vgate 正弦频率用于模式 10、11")
+    if "vin_period_us" in parameters:
+        positive_time(parameters["vin_period_us"],"Vin 方波单周期时长")
+        if mode not in (11,12): raise ValueError("Vin 方波单周期时长用于模式 11、12")
+        if any(k in parameters for k in ("vin_frequency_khz","pulse_period_us","pulse_gap_us")):
+            raise ValueError("Vin 单周期时长与其他脉冲周期 / 间隔设置只能填写一种")
+    if "gate_period_us" in parameters:
+        positive_time(parameters["gate_period_us"],"Vgate 正弦单周期时长")
+        if mode!=11: raise ValueError("Vgate 正弦单周期时长用于模式 11")
+        if any(k in parameters for k in ("gate_frequency_khz","gate_sine_period_us")):
+            raise ValueError("Vgate 单周期时长与旧版正弦设置只能填写一种")
     if any(key in parameters for key in LEVEL_KEYS) and mode not in (15,21):
         raise ValueError("三档电压用于模式 15、21")
     if "pulse_count" in parameters and (float(parameters["pulse_count"])!=int(parameters["pulse_count"]) or not 1<=int(parameters["pulse_count"])<=1000):
@@ -133,7 +217,8 @@ def make_waveform(catalog, binding):
     vin_peak=case["vin_range_v"][1]; gate_peak=case["gate_range_v"][1]
     identifier=case.get("source_experiment",case["experiment"]).lower()
     notes=["Reference timing is reconstructed from HTML text/plots; not original CSV."]
-    edge=float(parameters.get("rise_us",.02)); fall=float(parameters.get("fall_us",.02))
+    edge=float(parameters["rise_time_us"])*time_factor if "rise_time_us" in parameters else float(parameters.get("rise_us",.02))
+    fall=float(parameters["fall_time_us"])*time_factor if "fall_time_us" in parameters else float(parameters.get("fall_us",.02))
     if edge<0 or fall<0: raise ValueError("rise_us/fall_us must be nonnegative")
     points=[]
 
@@ -142,9 +227,14 @@ def make_waveform(catalog, binding):
         end=-1.0
         for start,width,level in sorted(pulses):
             if width<=0 or start<end-1e-9: raise ValueError("脉宽必须大于 0，脉冲组不能重叠；请减小脉宽/间隔或分别选择 near/far")
-            if start<0 or start+width>period+1e-9: raise ValueError("脉冲超出当前时窗：请缩短脉宽/间隔，或降低包络频率以扩大时窗")
-            r=min(edge,width/2); f=min(fall,width/2)
-            points.extend([(start,baseline),(start+r,level),(start+width-f,level),(start+width,baseline)])
+            if start<0 or start+width>period+1e-9: raise ValueError("脉冲超出当前时窗：请缩短脉宽/间隔，或增大整组时窗时长")
+            r=edge if any(k in parameters for k in ("rise_us","rise_time_us")) else min(edge,width/2)
+            f=fall if any(k in parameters for k in ("fall_us","fall_time_us")) else min(fall,width/2)
+            if r+f>width+1e-9:
+                raise ValueError("上升时间与下降时间之和不能超过脉宽；请增大脉宽或缩短边沿")
+            rise_end=start+r; fall_start=start+width-f
+            if math.isclose(r+f,width,rel_tol=1e-12,abs_tol=1e-12): fall_start=rise_end
+            points.extend([(start,baseline),(rise_end,level),(fall_start,level),(start+width,baseline)])
             end=start+width
         points.append((period,baseline))
         return Waveform(period,points=points,notes=notes)
@@ -166,7 +256,8 @@ def make_waveform(catalog, binding):
             raise ValueError("静态扫描要求 0 < 开始时刻、脉宽，且脉冲在时窗结束前归零")
         return (dc(1) if signal=="gate" else window(1,start,width)),entry,case
     def ramp(level,start,rise,width):
-        start=float(parameters.get("start_us",start)); rise=float(parameters.get("ramp_us",rise))
+        start=float(parameters.get("start_us",start))
+        rise=float(parameters["rise_time_us"])*time_factor if "rise_time_us" in parameters else float(parameters.get("ramp_us",rise))
         width=width_for(width)
         if rise<0 or rise>width: raise ValueError("ramp_us must be in 0..width_us")
         return Waveform(period,points=[(0,0),(start,0),(start+rise,level),
@@ -212,7 +303,9 @@ def make_waveform(catalog, binding):
         if not none:
             for start,interval,count in intervals:
                 default_duty=default_width/interval
-                if "vin_frequency_khz" in parameters:
+                if "vin_period_us" in parameters:
+                    interval=float(parameters["vin_period_us"])*time_factor
+                elif "vin_frequency_khz" in parameters:
                     interval=1000/float(parameters["vin_frequency_khz"])*time_factor
                 elif mode==12 and "pulse_gap_us" in parameters:
                     if "pulse_period_us" in parameters: raise ValueError("脉冲间隔与旧脉冲周期只能填写一个")
@@ -222,18 +315,25 @@ def make_waveform(catalog, binding):
                 else: interval=float(parameters.get("pulse_period_us",interval))
                 if "vin_duty_percent" in parameters:
                     width=interval*float(parameters["vin_duty_percent"])/100
-                elif "vin_frequency_khz" in parameters and not any(k in parameters for k in ("vin_width_us","width_us")):
+                elif any(k in parameters for k in ("vin_period_us","vin_frequency_khz")) and not any(k in parameters for k in ("vin_width_us","width_us")):
                     width=interval*default_duty
-                if count<1 or count>1000 or interval<width: raise ValueError("Vin 脉宽不能超过内部脉冲周期；请调整内部频率或占空比")
+                if count<1 or count>1000 or interval<width: raise ValueError("Vin 脉宽不能超过内部方波单周期时长；请调整单周期时长或占空比")
                 for index in range(count): pulses.append((start+index*interval,width,vin_peak))
         if signal=="vin": return train(pulses),entry,case
         if mode==11:
             sine_period=1000/float(parameters["gate_frequency_khz"])*time_factor if "gate_frequency_khz" in parameters else float(parameters.get("gate_sine_period_us",sine_period))
+            if "gate_period_us" in parameters: sine_period=float(parameters["gate_period_us"])*time_factor
             if sine_period<=0: raise ValueError("gate_sine_period_us must be positive")
-            wave=Waveform(period,analytic=lambda t:gate_peak*.5*(1-math.cos(2*math.pi*t/sine_period)),notes=notes,sine_period=sine_period)
-            if "gate_frequency_khz" in parameters:
+            # Align the sine maximum with the center of the first Vin pulse.
+            # Recompute the origin when pulse width/duty or start time changes.
+            # Keep the sine continuous before the pulse train as well as after it.
+            origin=intervals[0][0]+width/2
+            wave=Waveform(period,analytic=lambda t:gate_peak*.5*(1+math.cos(2*math.pi*(t-origin)/sine_period)),notes=notes,sine_period=sine_period)
+            if "gate_period_us" in parameters:
+                wave.continuity_multiple=(1000000/binding_frequency(binding,1e6/period)/positive_time(parameters["gate_period_us"],"Vgate 单周期时长")).denominator
+            elif "gate_frequency_khz" in parameters:
                 # Derive continuity from exact entered frequencies, not a rounded period.
-                wave.continuity_multiple=(Fraction(str(parameters["gate_frequency_khz"]))*1000/Fraction(str(frequency))).denominator
+                wave.continuity_multiple=(Fraction(str(parameters["gate_frequency_khz"]))*1000/binding_frequency(binding,1e6/period)).denominator
             return wave,entry,case
         return dc(gate_peak),entry,case
 
@@ -305,6 +405,8 @@ def make_waveform(catalog, binding):
             second=float(parameters["second_stage_us"])*time_factor if "second_stage_us" in parameters else (100 if mode==7 else 140)-default_duration
             width=duration+second
         if duration<0 or duration>width: raise ValueError("第一段时长不能超过当前通道脉宽；请增大脉宽或缩短第一段")
+        if mode!=7 and any(k in parameters for k in ("rise_us","rise_time_us")) and edge>duration:
+            raise ValueError("上升时间不能超过第一段持续时间")
         if mode==5 and topology==7:
             points=[(0,0),(start,0),(start+min(edge,duration),initial),(start+duration,initial),(start+duration,final)]
         elif mode==7:
@@ -327,9 +429,12 @@ def make_waveform(catalog, binding):
     if mode==10:
         if "flat" in identifier: return dc(gate_peak),entry,case
         floor=float(parameters.get("gate_floor_v",1.0 if topology in (3,5) else gate_peak*.7))
-        sine_period=float(parameters.get("gate_sine_period_us",period/8))
+        sine_period=1000/float(parameters["gate_frequency_khz"])*time_factor if "gate_frequency_khz" in parameters else float(parameters.get("gate_sine_period_us",period/8))
         if sine_period<=0: raise ValueError("gate_sine_period_us must be positive")
-        return Waveform(period,analytic=lambda t:(gate_peak+floor)/2-(gate_peak-floor)/2*math.cos(2*math.pi*t/sine_period),notes=notes,sine_period=sine_period),entry,case
+        wave=Waveform(period,analytic=lambda t:(gate_peak+floor)/2-(gate_peak-floor)/2*math.cos(2*math.pi*t/sine_period),notes=notes,sine_period=sine_period)
+        if "gate_frequency_khz" in parameters:
+            wave.continuity_multiple=(Fraction(str(parameters["gate_frequency_khz"]))*1000/binding_frequency(binding,1e6/period)).denominator
+        return wave,entry,case
     if mode==16:
         baseline=float(parameters.get("gate_baseline_v",6.8 if topology==6 else 6 if topology==7 else 2.4))
         return window(gate_peak,80,80,baseline),entry,case

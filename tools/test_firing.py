@@ -101,6 +101,12 @@ class FiringTests(unittest.TestCase):
                     for component in entry["components"]:
                         b=binding(entry["mode"],signal,entry["topology"],variant=case["variant"],component=component)
                         with self.subTest(topology=entry["topology"],mode=entry["mode"],variant=case["variant"],signal=signal,component=component):
+                            if (entry["topology"],entry["mode"],case["variant"],signal)==(3,12,3,"vin"):
+                                # This raw legacy case has a sub-clock plateau at
+                                # 10 us. It must not be silently stretched to one point.
+                                with self.assertRaisesRegex(ValueError,"不足一个 DAC 采样间隔"):
+                                    compile_scene({"channels":[b]},CATALOG)
+                                b["parameters"]={"vin_width_us":.1}
                             plan=compile_scene({"channels":[b]},CATALOG)
                             self.assertLessEqual(plan["sram_words"],4096)
                             self.assertEqual(len(plan["channels"]),4)
@@ -142,8 +148,11 @@ class FiringTests(unittest.TestCase):
     def test_sine_carrier_is_continuous(self):
         wave,_,_=make_waveform(CATALOG,binding(11,"gate",topology=5))
         self.assertEqual(wave.continuity_multiple,2)
-        self.assertAlmostEqual(wave.value(1),2.49993)
-        self.assertAlmostEqual(wave.value(2),0)
+        # Phase is anchored to the Vin pulse center, but the carrier must still
+        # continue through the envelope boundary without restarting there.
+        self.assertAlmostEqual(wave.value(0),wave.value(2))
+        self.assertAlmostEqual(wave.value(1-.000001),wave.value(1+.000001),places=3)
+        self.assertNotAlmostEqual(wave.value(0),wave.value(1))
         plan=compile_scene({"channels":[binding(11,"gate",topology=5)]},CATALOG)
         channel=plan["channels"][0]
         self.assertEqual(channel["cycles_per_frame"]%2,0)
@@ -158,7 +167,8 @@ class FiringTests(unittest.TestCase):
         self.assertEqual(plan["sram_words"],3960)
         self.assertEqual(plan["hold"],3)
         cfg["channels"][1]["phase_deg"]=90
-        with self.assertRaisesRegex(ValueError,"配对.*相位"): compile_scene(cfg,CATALOG)
+        shifted=compile_scene(cfg,CATALOG)
+        self.assertNotEqual(shifted["channels"][1]["samples"],plan["channels"][1]["samples"])
 
     def test_channel_assignment_is_not_fixed(self):
         for channel in (1,2,3,4):
@@ -168,7 +178,7 @@ class FiringTests(unittest.TestCase):
             self.assertEqual(sum(c["source"]=="sram" for c in plan["channels"]),1)
 
     def test_capacity_and_voltage_errors(self):
-        with self.assertRaisesRegex(ValueError,"cannot fit"):
+        with self.assertRaisesRegex(ValueError,"超出 AD9106"):
             compile_scene({"channels":[binding(10,"gate",frequency_hz=5000),binding(10,"gate",channel=2,frequency_hz=6000)]},CATALOG)
         with self.assertRaises(ValueError): voltage_code(12,10,0)
         with self.assertRaises(ValueError): compile_scene({"channels":[binding(1,amplitude_v=11)]},CATALOG)
@@ -178,7 +188,7 @@ class FiringTests(unittest.TestCase):
     def test_distinct_narrow_events_cannot_merge(self):
         wave=Waveform(100,points=[(0,0),(1,0),(1,5),(1.1,5),(1.1,0),
                                  (1.2,0),(1.2,5),(1.3,5),(1.3,0),(100,0)])
-        with self.assertRaisesRegex(ValueError,"collide"):
+        with self.assertRaisesRegex(ValueError,"不会自动拉宽或合并脉冲"):
             sample_wave(wave,32,1,0,1,0,10,0)
 
     def test_packets_and_register_mapping(self):

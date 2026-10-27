@@ -62,6 +62,8 @@ class WebTests(unittest.TestCase):
         self.assertEqual([c["frequency_hz"] for c in preview["channels"]],
                          [50000,50000,100000,100000])
         self.scene["channels"][1]["frequency_hz"]=60000
+        self.assertTrue(public_preview(self.scene,CATALOG)["ok"])
+        self.scene["channels"][1]["frequency_hz"]=60001
         bad=public_preview(self.scene,CATALOG)
         self.assertFalse(bad["ok"])
         self.assertEqual(len(bad["channels"]),4)
@@ -123,6 +125,9 @@ class WebTests(unittest.TestCase):
                         post("/api/probe",{"port":"COM9"},{"Origin":"http://evil.invalid"})
                     self.assertEqual(cross_origin.exception.code,400)
                     scene={**self.scene,"repeat_count":2,"interval_s":.01}
+                    scene=json.loads(json.dumps(scene))
+                    for channel in scene["channels"]:
+                        channel["duration_us"]=1e6/channel.pop("frequency_hz")
                     job=post("/api/send",{"port":"COM9","scene":scene})
                     deadline=time.monotonic()+6
                     while time.monotonic()<deadline:
@@ -134,6 +139,9 @@ class WebTests(unittest.TestCase):
                     self.assertEqual(FakeSerial.sent[1].last[3],0x42)
                     self.assertEqual(FakeSerial.sent[2].last[3],0x44)
                     self.assertTrue(server.plan_path.joinpath("plan.json").exists())
+                    saved=json.loads(server.scene_path.read_text(encoding="utf-8"))
+                    self.assertEqual(saved["channels"][0]["duration_us"],20)
+                    self.assertNotIn("frequency_hz",saved["channels"][0])
                     self.assertEqual(post("/api/abort",{"port":"COM9"})["message"][:2],"四路")
                     self.assertEqual(FakeSerial.sent[-1].last[3],0x43)
             finally:

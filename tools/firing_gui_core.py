@@ -10,14 +10,14 @@ def load_catalog():
     catalog=json.loads((ROOT/"waveforms/firing_catalog.json").read_text(encoding="utf-8"))
     for entry in catalog["modes"]:
         if entry["mode"]==12:
-            entry["description"]="Vin 快脉冲、慢脉冲分开测试：选择一个实验变体，设置内部方波频率、占空比和脉冲数量。Vgate 恒压。"
+            entry["description"]="Vin 快脉冲、慢脉冲分开测试：选择一个实验变体，设置内部方波单周期时长、占空比和脉冲数量。Vgate 恒压。"
             source=entry["cases"][0]
             entry["components"]=["default"]
             entry["cases"]=[dict(source,variant=i,experiment=group+"_pulses",source_experiment=source["experiment"],label=label,pulse_group=group,
                                  gate_range_v=[source["gate_range_v"][1]]*2)
                             for i,group,label in ((0,"near","快脉冲"),(1,"far","慢脉冲"))]
         if entry["mode"]==11:
-            entry["description"]="Vin 方波脉冲列，Vgate 连续正弦。Vin 内部频率、占空比及 Vgate 正弦频率独立可调；配对通道的实验变体同步切换。"
+            entry["description"]="Vin 方波用周期时长与占空比设置，Vgate 连续正弦用频率设置。正弦最高点与首个 Vin 方波中心对齐；同周期时每个脉冲均对齐。配对通道的实验变体同步切换。"
         if entry["mode"] in (5,7):
             entry["description"]=("Vgate 两段方波" if entry["topology"]==7 else "Vgate 斜坡接保持平台") if entry["mode"]==5 else "Vin 斜坡接保持平台，Vgate 恒压"
             entry["description"]+="；两段电压、两段持续时间独立设置。"
@@ -28,14 +28,24 @@ def load_catalog():
             entry["title"]="23 兴奋性阻断"
     for topology in (3,5,6,7):
         catalog["modes"].append({"topology":topology,"mode":24,"name":"Static scan",
-            "description":"Vgate 恒压，Vin 单个可调宽度方波；当前每次触发连续执行两遍单元。",
+            "description":"单次有限脉冲：Vgate 提前建立、延后归零，包住 Vin；长平台由 FPGA 定时，结束后全部归零。",
             "components":["pulse"],"cases":[{"variant":0,"experiment":"static_scan",
             "vin_range_v":[0,1],"gate_range_v":[0,1]}]})
         for mode,name,description in ((25,"square","FPGA 定时方波：幅值为中心到峰值，偏移为中心电压，占空比可调；过短切换间隔会拒绝。"),
-                                      (26,"sine","芯片 DDS 正弦波：幅值、偏移、相位可调；多路正弦共用频率，显示量化后实际频率。")):
+                                      (26,"sine","芯片 DDS 正弦波：频率、幅值、电压偏移、时间偏移可调；多路正弦共用频率，显示量化后实际频率。")):
             catalog["modes"].append({"topology":topology,"mode":mode,"name":name,
                 "description":description,"components":[name],"cases":[{"variant":0,"experiment":name,
                 "vin_range_v":[-1,1],"gate_range_v":[-1,1]}]})
+    from firing_waveforms import constant_output, PERIOD_US
+    for entry in catalog["modes"]:
+        topology,mode=entry["topology"],entry["mode"]
+        reference=PERIOD_US.get(mode,100)
+        if mode==9: reference={3:60,5:100,6:225,7:50}[topology]
+        if mode==11 and topology in (6,7): reference={6:60,7:120}[topology]
+        if mode==12 and topology==6: reference=210
+        entry["reference_period_us"]=reference
+        for case in entry["cases"]:
+            case["constant_signals"]=[] if mode==24 else [signal for signal in ("vin","gate") if constant_output(topology,mode,signal,case)]
     return catalog
 
 
