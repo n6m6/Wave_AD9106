@@ -4,7 +4,9 @@ const el=id=>document.getElementById(id);
 const modesZh=["持续放电","起始放电","持续簇发","起始簇发","混合模式","频率适应", "I 类兴奋性","II 类兴奋性","发放延迟","阈下振荡","共振器","积分器", "反跳单发","反跳簇发","阈值可变性","双稳态","去极化后电位","适应性", "抑制诱发放电","抑制诱发簇发","全或无","不应期","兴奋性阻断"];
 const paramLabels={period_us:"模板长度 / us",start_us:"开始时刻 / us",width_us:"脉冲宽度 / us",rise_us:"上升沿 / us",fall_us:"下降沿 / us",ramp_us:"斜坡时长 / us",gap_us:"双脉冲间隔 / us",pulse_period_us:"脉冲列间隔 / us",pulse_count:"脉冲列数量",gate_sine_period_us:"Gate 正弦周期 / us",gate_floor_v:"Gate 最低电压 / V",gate_initial_v:"Gate 初始电压 / V",gate_final_v:"Gate 末段电压 / V",gate_baseline_v:"Gate 基线电压 / V",levels_v:"三档电压 / V（逗号分隔）"};
 const extraLabels={vin_width_us:"Vin 脉宽（含边沿）/ μs",gate_width_us:"Vgate 脉宽（含边沿）/ μs",
-  pulse_gap_us:"脉冲间隔（回到基线后）/ μs",vin_frequency_khz:"Vin 内部方波频率 / kHz",
+  width_us:"Vin 脉冲持续时间 / μs",gate_lead_us:"Vgate 提前建立 / μs",gate_tail_us:"Vgate 延后归零 / μs",
+  rise_time_us:"本路上升时间 / μs",fall_time_us:"本路下降时间 / μs",
+  pulse_gap_us:"脉冲间隔（回到基线后）/ μs",vin_period_us:"Vin 方波单周期时长 / μs",
   vin_duty_percent:"Vin 内部方波占空比 / %",gate_frequency_khz:"Vgate 正弦频率 / kHz",
   pulse_count:"脉冲数量",gate_initial_v:"Vgate 开始电压 / V",gate_final_v:"Vgate 结束电压 / V",
   stage1_voltage_v:"第一段电压 / V",stage2_voltage_v:"第二段电压 / V",
@@ -32,6 +34,15 @@ function log(text,kind=""){
 }
 
 function entry(topology,mode){return state.catalog.modes.find(e=>e.topology===Number(topology)&&e.mode===Number(mode))}
+function constantBinding(binding){
+  const e=entry(binding.topology,binding.mode);
+  const c=e?.cases.find(c=>String(c.variant)===String(binding.variant??0)||c.experiment===binding.variant);
+  return Boolean(c?.constant_signals?.includes(binding.signal));
+}
+function constantCard(card){
+  const f=name=>card.querySelector(`[data-field="${name}"]`).value;
+  return constantBinding({topology:f("topology"),mode:f("mode"),variant:f("variant"),signal:f("signal")});
+}
 function option(select,value,label){const node=document.createElement("option");node.value=String(value);node.textContent=label;select.append(node)}
 function choose(select,desired){
   const exists=[...select.options].some(o=>o.value===String(desired));
@@ -45,7 +56,66 @@ function peakFor(ch){
   return Math.min(10,Math.max(...range.map(Math.abs)));
 }
 
+function reciprocalDuration(value,scale,label){
+  const parsed=number(value,label);
+  if(parsed<=0)throw new Error(`${label}必须大于 0`);
+  return scale/parsed;
+}
+
+function durationBinding(binding){
+  // Migrate only legacy fields. Actual time parameters must not be rescaled.
+  const result={...binding,parameters:{...(binding.parameters||{})}};
+  if(constantBinding(binding))return {...result,duration_us:10,time_offset_us:0,parameters:{}};
+  const old=binding.frequency_hz;
+  if(result.duration_us===undefined)
+    result.duration_us=reciprocalDuration(old??(Number(binding.mode)>=25?1000:100000),1e6,"旧场景时序参数");
+  else if(old!==undefined&&Math.abs(Number(result.duration_us)*Number(old)/1e6-1)>1e-12)
+    throw new Error("时长与旧版频率字段不一致，请仅保留 duration_us");
+  delete result.frequency_hz;
+  if(binding.phase_deg!==undefined){
+    const offset=-number(binding.phase_deg,"旧相位")*result.duration_us/360;
+    if(result.time_offset_us!==undefined&&Math.abs(Number(result.time_offset_us)-offset)>1e-10+Math.abs(offset)*1e-12)
+      throw new Error("时间偏移与旧相位不一致，请仅保留时间偏移");
+    result.time_offset_us=offset;
+  }
+  delete result.phase_deg;
+  if(Number(binding.mode)===24){
+    result.time_offset_us=0;
+    if(binding.signal==="gate"&&!state.scene?.static_pulse){
+      result.parameters.gate_lead_us??=result.parameters.start_us??10;
+      result.parameters.gate_tail_us??=10;
+    }
+  }
+  const reference=result.parameters.period_us??entry(binding.topology,binding.mode)?.reference_period_us;
+  if(reference)for(const [old,current] of [["rise_us","rise_time_us"],["fall_us","fall_time_us"]]){
+    if(result.parameters[old]!==undefined){
+      if(result.parameters[current]===undefined)result.parameters[current]=Number(result.parameters[old])*result.duration_us/reference;
+      delete result.parameters[old];
+    }
+  }
+  for(const [legacy,current] of [["vin_frequency_khz","vin_period_us"]]){
+    if(result.parameters[legacy]===undefined)continue;
+    const duration=reciprocalDuration(result.parameters[legacy],1000,"旧场景内部时序参数");
+    if(result.parameters[current]!==undefined&&Math.abs(Number(result.parameters[current])/duration-1)>1e-12)
+      throw new Error("新旧内部周期设置不一致，请仅保留时长参数");
+    result.parameters[current]=duration;
+    delete result.parameters[legacy];
+  }
+  let sinePeriod=result.parameters.gate_period_us;
+  if(sinePeriod===undefined&&result.parameters.gate_sine_period_us!==undefined&&[10,11].includes(Number(binding.mode)))
+    sinePeriod=Number(result.parameters.gate_sine_period_us)*result.duration_us/reference;
+  if(sinePeriod!==undefined){
+    const frequency=reciprocalDuration(sinePeriod,1000,"旧场景正弦周期");
+    if(result.parameters.gate_frequency_khz!==undefined&&Math.abs(Number(result.parameters.gate_frequency_khz)/frequency-1)>1e-12)
+      throw new Error("正弦频率与旧周期不一致，请只保留一种设置");
+    result.parameters.gate_frequency_khz=frequency;
+    delete result.parameters.gate_period_us;delete result.parameters.gate_sine_period_us;
+  }
+  return result;
+}
+
 function createEditor(number,binding){
+  binding=durationBinding(binding);
   const card=document.createElement("article");card.className="channel-card";card.dataset.channel=number;
   card.innerHTML=`<div class="channel-top"><div class="channel-name"><span class="channel-icon">${String(number).padStart(2,"0")}</span>DAC${number}</div><label class="switch-label"><input type="checkbox" data-field="enabled">启用通道</label></div>
     <div class="channel-grid">
@@ -55,16 +125,16 @@ function createEditor(number,binding){
       <div class="field"><label>同步配对</label><select data-field="pair"><option value="">无</option><option value="A">A</option><option value="B">B</option></select></div>
       <div class="field wide"><label>实验变体 · 同图不同曲线逐一编号</label><select data-field="variant"></select></div>
       <div class="field"><label>序列分段</label><select data-field="component"></select></div>
-      <div class="field"><label>包络频率 / kHz</label><input data-field="frequency" type="number" min="0.001" step="any" inputmode="decimal"></div>
+      <div class="field"><label>整组时窗时长 / μs</label><input data-field="duration" type="number" min="0.001" step="any" inputmode="decimal"></div>
       <div class="field"><label>幅值 / V（绝对峰值）</label><div class="inline"><input data-field="amplitude" type="number" min="0" max="10" step="any"><button class="reference-button" data-action="peak" type="button">原图幅值</button></div></div>
-      <div class="field"><label>偏移 / V</label><input data-field="offset" type="number" step="any"></div>
-      <div class="field"><label>相位 / °</label><input data-field="phase" type="number" step="any"></div>
+      <div class="field"><label>电压偏移 / V</label><input data-field="offset" type="number" step="any"></div>
+      <div class="field"><label>时间偏移 / μs</label><input data-field="timeShift" type="number" step="any"><small>正数延后，负数提前；循环平移</small></div>
     </div><p class="pair-note" role="status"></p><p class="channel-note"></p><div class="simple-params advanced-grid"></div><p class="simple-hint channel-note"></p><details class="advanced"><summary>高级时序参数</summary><div class="advanced-grid"></div></details>`;
   const field=name=>card.querySelector(`[data-field="${name}"]`);
   for(const t of [3,5,6,7])option(field("topology"),t,`拓扑 ${t}`);
   for(let m=1;m<=23;m++)option(field("mode"),m,`${String(m).padStart(2,"0")} ${modesZh[m-1]}`);
-  option(field("mode"),24,"24 静态扫描（Vin 单脉冲 / Vgate 恒压）");
-  option(field("mode"),25,"25 标准方波（支持 1 kHz）");
+  option(field("mode"),24,"24 静态扫描（单次脉冲 / Vgate 包络）");
+  option(field("mode"),25,"25 标准方波（支持 1000 μs 单周期）");
   option(field("mode"),26,"26 标准正弦（支持 1 kHz）");
   const advanced=card.querySelector(".advanced .advanced-grid");
   for(const [key,label] of Object.entries(paramLabels)){
@@ -85,9 +155,9 @@ function createEditor(number,binding){
   choose(field("topology"),binding.topology??6);choose(field("mode"),binding.mode??3);
   choose(field("signal"),binding.signal??"vin");choose(field("pair"),binding.pair??"");
   updateVariantChoices(card,binding.variant??0,binding.component);
-  field("frequency").value=Number(binding.frequency_hz??(Number(binding.mode)>=25?1000:100000))/1000;
+  field("duration").value=Number(binding.mode)===26?1000/binding.duration_us:binding.duration_us;
   field("amplitude").value=binding.amplitude_v??peakFor(card);
-  field("offset").value=binding.offset_v??0;field("phase").value=binding.phase_deg??0;
+  field("offset").value=binding.offset_v??0;field("timeShift").value=binding.time_offset_us??0;
   for(const input of card.querySelectorAll("[data-param]")){
     const val=binding.parameters?.[input.dataset.param];
     if(val!==undefined)input.value=Array.isArray(val)?val.join(", "):val;
@@ -118,25 +188,25 @@ function updateVariantChoices(card,wantedVariant=0,wantedComponent=null){
   for(const name of ["topology","variant","component"])field(name).closest(".field").hidden=basic;
   if(mode===12)field("component").closest(".field").hidden=true;
   card.querySelector(".advanced summary").textContent=mode===25?"方波参数":"高级时序参数";
-  field("frequency").closest(".field").querySelector("label").textContent=basic?"波形频率 / kHz":"包络频率 / kHz";
-  field("phase").disabled=mode===25;
+  field("duration").closest(".field").querySelector("label").textContent=mode===26?"正弦频率 / kHz":basic?"单周期时长 / μs":"整组时窗时长 / μs";
+  field("timeShift").disabled=false;
   card.querySelector(".advanced").hidden=mode===26;
   for(const input of card.querySelectorAll("[data-param]"))
     input.closest(".field").hidden=basic?!(mode===25&&input.dataset.param==="duty_percent"):input.dataset.param==="duty_percent";
   if(mode===25){
     const duty=card.querySelector('[data-param="duty_percent"]');if(!duty.value)duty.value=50;
-    field("phase").value=0;card.querySelector(".advanced").open=true;
+    card.querySelector(".advanced").open=true;
   }
   if(Number(field("mode").value)===24){
     const isVin=field("signal").value==="vin";
     card.querySelector('[data-action="peak"]').hidden=true;
-    field("amplitude").closest(".field").querySelector("label").textContent=isVin?"Vin 脉冲电压 / V":"Vgate 恒定电压 / V";
+    field("amplitude").closest(".field").querySelector("label").textContent=isVin?"Vin 脉冲电压 / V":"Vgate 包络电压 / V";
     card.querySelector(".channel-note").textContent=isVin?
-      "本通道输出 Vin：调“Vin 脉冲电压”和下方“脉冲宽度 / us”。":
-      "本通道输出 Vgate 恒压：调“Vgate 恒定电压”。";
+      "本通道输出一次 Vin 脉冲，保持设定时间后自动归零。":
+      "Vgate 提前建立、延后归零，包住配对的 Vin 脉冲。";
     card.querySelector(".advanced").open=true;
-    field("frequency").closest(".field").hidden=true;
-    for(const [name,value] of [["period_us",100],["start_us",10],["width_us",10]]){
+    field("duration").closest(".field").hidden=true;
+    for(const [name,value] of [["width_us",2000],["gate_lead_us",300],["gate_tail_us",300]]){
       const input=card.querySelector(`[data-param="${name}"]`);
       if(!input.value)input.value=value;
     }
@@ -144,7 +214,7 @@ function updateVariantChoices(card,wantedVariant=0,wantedComponent=null){
       card.querySelector(`[data-param="${name}"]`).closest(".field").hidden=!isVin;
   }else{
     card.querySelector('[data-action="peak"]').hidden=false;
-    field("frequency").closest(".field").hidden=false;
+    field("duration").closest(".field").hidden=false;
     field("amplitude").closest(".field").querySelector("label").textContent="幅值 / V（绝对峰值）";
     for(const name of ["start_us","width_us"])
       card.querySelector(`[data-param="${name}"]`).closest(".field").hidden=basic;
@@ -161,9 +231,11 @@ function updateSimpleControls(card){
   const mode=Number(field("mode").value),topology=Number(field("topology").value),vin=field("signal").value==="vin";
   const firing=mode<24,levels=(mode===15&&!vin)||(mode===21&&vin),stages=(mode===5&&!vin)||(mode===7&&vin);
   const hasGateWidth=[3,4,6,15,16].includes(mode)||(mode===18&&topology!==3);
-  const visible={vin_width_us:firing&&vin&&![7,11,12].includes(mode),gate_width_us:firing&&!vin&&hasGateWidth,
-    pulse_gap_us:(mode===3&&!vin)||([20,22].includes(mode)&&vin),vin_frequency_khz:[11,12].includes(mode)&&vin,
-    vin_duty_percent:[11,12].includes(mode)&&vin,gate_frequency_khz:mode===11&&!vin,
+  const visible={width_us:mode===24&&vin,gate_lead_us:mode===24&&!vin,gate_tail_us:mode===24&&!vin,
+    rise_time_us:firing&&!(mode===11&&!vin)&&!stages,fall_time_us:firing&&!(mode===11&&!vin),
+    vin_width_us:firing&&vin&&![7,11,12].includes(mode),gate_width_us:firing&&!vin&&hasGateWidth,
+    pulse_gap_us:(mode===3&&!vin)||([20,22].includes(mode)&&vin),vin_period_us:[11,12].includes(mode)&&vin,
+    vin_duty_percent:[11,12].includes(mode)&&vin,gate_frequency_khz:[10,11].includes(mode)&&!vin,
     pulse_count:(mode===3&&!vin)||([11,12,20].includes(mode)&&vin),
     gate_initial_v:mode===6&&!vin,gate_final_v:mode===6&&!vin,
     stage1_voltage_v:stages,stage2_voltage_v:stages,first_stage_us:stages,second_stage_us:stages,
@@ -171,13 +243,13 @@ function updateSimpleControls(card){
   for(const key of extraKeys)card.querySelector(`[data-param="${key}"]`).closest(".field").hidden=!visible[key];
   const countInput=card.querySelector('[data-param="pulse_count"]'),countLabel=vin?"Vin 脉冲数量":"Vgate 脉冲数量";
   countInput.setAttribute("aria-label",countLabel);countInput.closest(".field").querySelector("label").textContent=countLabel;
-  card.querySelector(".simple-params").hidden=!firing;
-  const hint=card.querySelector(".simple-hint");hint.hidden=!firing;
+  card.querySelector(".simple-params").hidden=!firing&&mode!==24;
+  const hint=card.querySelector(".simple-hint");hint.hidden=!firing&&mode!==24;
   hint.textContent=mode===12&&!vin?"Vgate 为恒压，只需设置上方幅值；Vin 的脉宽和间隔不会改变 Gate。":
     "脉宽、间隔填写实际 μs，互不挤占；留空沿用原模板。";
   if([11,12].includes(mode))hint.textContent=vin?
-    "这里设置脉冲列内部的方波频率和占空比，脉宽 = 周期 × 占空比；上方包络频率只控制整组时窗。留空沿用当前变体。":
-    mode===11?"Vgate 输出连续正弦，正弦频率独立于 Vin 内部方波频率。":"Vgate 为恒压，只需设置上方电压。";
+    "这里设置单个方波的周期时长和占空比：脉宽 = 周期时长 × 占空比，间隔 = 周期时长 − 脉宽；上方时长是整组时窗。留空沿用当前变体。":
+    mode===11?"Vgate 用频率设置正弦，峰值对齐 Vin 第一个方波中心；当正弦周期与方波周期相等时每个脉冲均对齐。正弦周期 / μs = 1000 ÷ 频率 / kHz。":"Vgate 为恒压，只需设置上方电压。";
   if(stages)hint.textContent=mode===7?"第一段从 0 V 斜坡升至第一段电压，再以第二段电压保持；两段时间分别填写实际 μs。":
     topology===7?"第一段方波接第二段方波；两段电压和时间分别设置，时间填写实际 μs。":
     "第一段从第一段电压斜坡变化至第二段电压，第二段保持；两段时间分别填写实际 μs。";
@@ -185,6 +257,8 @@ function updateSimpleControls(card){
   if(levels)hint.textContent+=" 三档电压分别填写，数值不再乘以幅值；通道偏移仍会叠加。";
   if(mode===12&&vin)hint.textContent+=" 快、慢脉冲通过实验变体分别测试，每次只输出一组。";
   if(firing){
+    if([10,11].includes(mode))card.querySelector('[data-param="gate_sine_period_us"]').closest(".field").hidden=true;
+    for(const key of ["rise_us","fall_us"])card.querySelector(`[data-param="${key}"]`).closest(".field").hidden=true;
     card.querySelector('[data-param="width_us"]').closest(".field").hidden=true;
     if([11,12].includes(mode))card.querySelector('[data-param="pulse_period_us"]').closest(".field").hidden=true;
     if(mode===22)card.querySelector('[data-param="gap_us"]').closest(".field").hidden=true;
@@ -197,7 +271,21 @@ function updateSimpleControls(card){
   const explicitLevels=voltageKeys.some(k=>card.querySelector(`[data-param="${k}"]`).value.trim());
   field("amplitude").disabled=explicitLevels;
   card.querySelector('[data-action="peak"]').disabled=explicitLevels;
-  if(mode===12&&!vin)field("amplitude").closest(".field").querySelector("label").textContent="Vgate 恒定电压 / V";
+  const dc=constantCard(card);
+  card.dataset.outputKind=dc?"constant":"dynamic";
+  field("duration").closest(".field").hidden=dc||mode===24;
+  field("timeShift").closest(".field").hidden=dc||mode===24;
+  field("component").closest(".field").hidden=dc||mode===12||mode>=24;
+  card.querySelector(".advanced").hidden=dc||mode===24||mode===26||(mode===11&&!vin);
+  if(mode===24)hint.textContent=vin?"2000 μs = 2 ms。每次点击只输出一次，时间到后自动归零；无需设置整组时窗。":
+    "提前/延后时间相对配对 Vin 设置。长脉冲相邻切换至少间隔 300 μs；更短组合会检查能否用 SRAM 完成。";
+  if(dc){
+    field("amplitude").closest(".field").querySelector("label").textContent=`${vin?"Vin":"Vgate"} 恒定电压 / V`;
+    field("amplitude").disabled=false;
+    card.querySelector(".simple-params").hidden=true;
+    hint.hidden=false;
+    hint.textContent=`${vin?"Vin":"Vgate"} 全程恒压，只设置电压和电压偏移；无周期、脉宽或时间偏移，SRAM 占用 0 点。全部 4096 点可供已启用的动态通道使用。`;
+  }
 }
 
 function pairedPeer(card,mode=card.querySelector('[data-field="mode"]').value){
@@ -225,21 +313,18 @@ function resetMode(card){
   for(const input of card.querySelectorAll("[data-param]"))input.value="";
   updateVariantChoices(card,0,null);
   if(Number(card.querySelector('[data-field="mode"]').value)>=25){
-    card.querySelector('[data-field="frequency"]').value=1;
-    card.querySelector('[data-field="phase"]').value=0;
+    card.querySelector('[data-field="duration"]').value=Number(card.querySelector('[data-field="mode"]').value)===26?1:1000;
+    card.querySelector('[data-field="timeShift"]').value=0;
   }
   card.querySelector('[data-field="amplitude"]').value=peakFor(card);
   card.dataset.previousMode=card.querySelector('[data-field="mode"]').value;
 }
 
-function syncExtraParameter(card,input){
-  const key=input.dataset.param;
-  if(!extraKeys.includes(key))return;
+function syncPairedWindow(card,input){
+  if(!["duration","mode","variant","pair","enabled"].includes(input.dataset.field))return;
   const peer=pairedPeer(card);
-  if(peer){
-    peer.querySelector(`[data-param="${key}"]`).value=input.value;
-    updateSimpleControls(peer);
-  }
+  if(!peer||constantCard(card)||constantCard(peer))return;
+  peer.querySelector('[data-field="duration"]').value=card.querySelector('[data-field="duration"]').value;
 }
 
 function applyScene(scene){
@@ -270,10 +355,12 @@ function collectScene(){
   if(scene.interval_s<0.01||scene.interval_s>3600)throw new Error("波形间隔须为 0.01～3600 秒");
   scene.channels=[...document.querySelectorAll(".channel-card")].map(card=>{
     const f=name=>card.querySelector(`[data-field="${name}"]`);
-    const n=Number(card.dataset.channel),params={};
+    const n=Number(card.dataset.channel),params={},dc=constantCard(card);
     for(const input of card.querySelectorAll("[data-param]")){
+      if(dc)continue;
       const text=input.value.trim(),key=input.dataset.param;
       const mode=Number(f("mode").value);
+      if(mode===24&&!(f("signal").value==="vin"?key==="width_us":["gate_lead_us","gate_tail_us"].includes(key)))continue;
       if((mode===25&&key!=="duty_percent")||mode===26||(mode<25&&key==="duty_percent"))continue;
       if(!text)continue;
       if(key==="levels_v"){
@@ -285,7 +372,7 @@ function collectScene(){
         if(key==="pulse_count"&&!Number.isInteger(params[key]))throw new Error(`DAC${n} 脉冲列数量应为整数`);
       }
     }
-    if(params.vin_frequency_khz!==undefined||params.pulse_gap_us!==undefined)delete params.pulse_period_us;
+    if(params.vin_period_us!==undefined||params.pulse_gap_us!==undefined)delete params.pulse_period_us;
     if(params.pulse_gap_us!==undefined)delete params.gap_us;
     if(params.vin_duty_percent!==undefined){delete params.vin_width_us;delete params.width_us;delete params.pulse_gap_us}
     if(params.gate_frequency_khz!==undefined)delete params.gate_sine_period_us;
@@ -293,18 +380,22 @@ function collectScene(){
     if(Number(f("mode").value)===6&&params.gate_width_us!==undefined)delete params.ramp_us;
     const channel={channel:n,enabled:f("enabled").checked,topology:Number(f("topology").value),
       mode:Number(f("mode").value),signal:f("signal").value,variant:Number(f("variant").value),
-      component:f("component").value,frequency_hz:number(f("frequency").value,`DAC${n} 包络频率`)*1000,
+      component:f("component").value,
       amplitude_v:number(f("amplitude").value,`DAC${n} 幅值`),offset_v:number(f("offset").value,`DAC${n} 偏移`),
-      phase_deg:number(f("phase").value,`DAC${n} 相位`)};
-    if(channel.mode===24){
-      const period=params.period_us??100;
-      if(period<=0)throw new Error(`DAC${n} 静态扫描时窗必须大于 0`);
-      channel.frequency_hz=1000000/period;
-    }
+      time_offset_us:dc?0:number(f("timeShift").value,`DAC${n} 时间偏移`)};
+    if(channel.mode===24){delete channel.time_offset_us;}
+    else if(!dc&&channel.mode===26){
+      channel.frequency_hz=number(f("duration").value,`DAC${n} 正弦频率`)*1000;
+      if(channel.frequency_hz<=0)throw new Error(`DAC${n} 正弦频率必须大于 0`);
+    }else if(!dc)channel.duration_us=number(f("duration").value,`DAC${n} 时窗 / 单周期时长`);
+    else delete channel.time_offset_us;
+    if(!dc&&channel.duration_us<=0)throw new Error(`DAC${n} 时窗 / 单周期时长必须大于 0`);
     if(f("pair").value)channel.pair=f("pair").value;
     if(Object.keys(params).length)channel.parameters=params;
     return channel;
   });
+  scene.static_pulse=scene.channels.some(b=>b.enabled&&b.mode===24);
+  if(scene.static_pulse){scene.repeat_count=1;el("repeatCount").value=1;}
   return scene;
 }
 
@@ -330,40 +421,64 @@ async function previewScene(){
 function showPreviewError(message){
   state.preview=null;el("previewFlag").textContent="不可发送";el("previewFlag").className="pill bad";
   el("previewError").hidden=false;el("previewError").textContent=message;
-  for(const id of ["frameFreq","memoryUsed","timingValue"])el(id).textContent="—";
+  for(const id of ["frameDuration","memoryUsed","timingValue"])el(id).textContent="—";
+  el("resourceNotes").textContent="";
   updateControls();
 }
 
-function formatHz(value){
-  if(!value)return"直流";
-  return value>=1000?`${(value/1000).toLocaleString("zh-CN",{maximumFractionDigits:4})} kHz`:
-    `${value.toLocaleString("zh-CN",{maximumFractionDigits:4})} Hz`;
+function formatDuration(value){
+  if(value===null||value===undefined||!Number.isFinite(value))return "—";
+  return `${Number(value.toPrecision(8)).toLocaleString("zh-CN",{maximumSignificantDigits:8})} μs`;
+}
+
+function formatFrequency(value){
+  if(!Number.isFinite(value)||value<=0)return "—";
+  return `${Number((value>=1000?value/1000:value).toPrecision(8)).toLocaleString("zh-CN",{maximumSignificantDigits:8})} ${value>=1000?"kHz":"Hz"}`;
 }
 
 function renderPreview(result){
-  el("previewFlag").textContent=result.ok?"可发送":"需要调整";
-  el("previewFlag").className=`pill ${result.ok?"good":"bad"}`;
+  const warnings=result.channels.flatMap(row=>(row.sampling_warnings||[]).map(note=>`DAC${row.channel}：${note}`));
+  const quantized=result.channels.filter(row=>row.snapped);
+  const hasWarnings=warnings.length||quantized.length;
+  el("previewFlag").textContent=result.ok?(hasWarnings?"可发送 · 请检查细节":"可发送"):"需要调整";
+  el("previewFlag").className=`pill ${result.ok?(hasWarnings?"waiting":"good"):"bad"}`;
   el("previewError").hidden=result.ok;
   el("previewError").textContent=result.ok?"":`当前配置无法一起发送：${result.error}。下图仅用于检查单路形状，修正后会重新编译。`;
-  el("frameFreq").textContent=result.ok?formatHz(result.summary.frame_hz):"—";
+  el("frameDuration").textContent=result.ok?formatDuration(result.summary.frame_duration_us):"—";
   el("memoryUsed").textContent=result.ok?`${result.summary.sram_words} / 4096 点`:"—";
-  el("timingValue").textContent=result.ok?`${result.summary.hold} / ${result.summary.frequency_error_ppm.toFixed(3)} ppm`:"—";
+  const sramRow=result.channels.find(row=>row.source==="sram");
+  const sampleInterval=result.summary?.sample_interval_us??sramRow?.step_us??null;
+  const freeWords=result.ok?(result.summary.sram_free_words??(4096-result.summary.sram_words)):null;
+  el("timingValue").textContent=result.ok?(sampleInterval===null?"不使用 SRAM":formatDuration(sampleInterval)):"—";
+  el("resourceNotes").textContent=result.ok?
+    `剩余 ${freeWords} 点。${sampleInterval===null?"":`HOLD=${result.summary.hold}；`}最大整组时长误差 ${formatDuration(result.summary.max_duration_error_us)}。`+
+    (warnings.length?` ${warnings.join("；")}。`:"")+
+    (quantized.length?` ${quantized.map(row=>`DAC${row.channel}`).join("、")}存在窄平台量化，请检查波形。`:""):
+    "未找到可发送的联合方案；以下为理论形状，不代表已通过存储和采样精度检查。";
   const host=el("charts");host.replaceChildren();
   for(const row of result.channels){
     const card=document.createElement("article");card.className="chart-card";
     const head=document.createElement("div");head.className="chart-head";
     const title=document.createElement("strong");title.textContent=`DAC${row.channel} · ${row.signal==="gate"?"Vgate":row.signal==="vin"?"Vin":"未启用"}`;
-    const freq=document.createElement("small");freq.textContent=formatHz(row.frequency_hz);
-    head.append(title,freq);
+    const timing=document.createElement("small");timing.textContent=row.pulse_width_us?`单次保持 ${formatDuration(row.pulse_width_us)}`:row.source==="constant"?"直流":row.mode===26?`正弦 ${formatFrequency(row.frequency_hz)}`:row.period_us?`${row.mode>=25?"单周期":"整组时窗"} ${formatDuration(row.period_us)}`:"—";
+    head.append(title,timing);
     const canvas=document.createElement("canvas");canvas.setAttribute("aria-label",`DAC${row.channel} 波形图`);
     const meta=document.createElement("div");meta.className="chart-meta";
     meta.textContent=row.error?row.error:row.source==="template"?"理论波形 · 当前配置不可发送（原因见上方）":
-      row.source==="constant"?`直流 · ${Number(row.min_v).toFixed(3)} V*`:
+      row.source==="constant"?`直流 · ${Number(row.min_v).toFixed(3)} V* · SRAM 0 点，容量留给动态通道`:
       row.source==="disabled"?"零码 / 通道未启用":
       `T${row.topology} / ${String(row.mode).padStart(2,"0")} · ${row.min_v.toFixed(3)}…${row.max_v.toFixed(3)} V*${row.snapped?` · 窄平台量化 ${row.snapped} 点`:""}`;
+    if(row.source==="sram"){
+      const shared=Array.isArray(row.shared_with)?row.shared_with:null;
+      meta.textContent+=` · SRAM ${row.sram_words??row.samples?.length??"—"} 点`+
+        (shared===null?"（服务未提供共享信息）":shared.length?`（与 ${shared.map(n=>`DAC${n}`).join("、")}共用）`:"（独占）");
+    }
     if(row.zero_tail_samples)meta.textContent+=` · 末尾 ${row.zero_tail_us.toFixed(2)} us 零码等待由芯片计时`;
+    if(row.carrier_hz||row.carrier_period_us)meta.textContent+=` · 正弦频率 ${formatFrequency(row.carrier_hz||(1e6/row.carrier_period_us))}`;
     if(row.source==="dds")meta.textContent+=" · DDS 实际频率 · 曲线为解析预览";
     if(row.source==="fpga_square")meta.textContent+=" · FPGA 定时切换电平";
+    if(row.source==="fpga_pulse")meta.textContent+=" · FPGA 定时单脉冲 · SRAM 0 点 · 结束归零";
+    if(row.time_offset_us)meta.textContent+=` · 时间偏移 ${formatDuration(row.time_offset_us)}`;
     card.append(head,canvas,meta);host.append(card);
     requestAnimationFrame(()=>drawChart(canvas,row));
   }
@@ -407,6 +522,11 @@ function drawChart(canvas,row){
     }
   }
   const color=row.signal==="gate"?"#c87921":row.source==="disabled"?"#9aabba":"#1767a2";
+  if(Array.isArray(row.sample_times_us)&&row.sample_times_us.length===values.length){
+    ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();
+    row.sample_times_us.forEach((t,i)=>{const x=margin.l+w*t/row.duration_us;if(i)ctx.lineTo(x,y(values[i]));else ctx.moveTo(x,y(values[i]));});
+    ctx.stroke();return;
+  }
   ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();
   let last=null;
   for(let i=0;i<buckets.length;i++){
@@ -434,8 +554,12 @@ function updateControls(){
   el("sendScene").disabled=state.busy||!connected||!state.preview?.ok;
   el("abortOutput").disabled=!connected;
   el("refreshPorts").disabled=state.busy;
-  el("intervalSeconds").disabled=state.busy;
-  el("repeatCount").disabled=state.busy;
+  const staticPulse=[...document.querySelectorAll('.channel-card')].some(card=>card.querySelector('[data-field="enabled"]').checked&&card.querySelector('[data-field="mode"]').value==='24');
+  el("intervalSeconds").disabled=state.busy||staticPulse;
+  el("repeatCount").disabled=state.busy||staticPulse;
+  if(staticPulse)el("repeatCount").value=1;
+  el("playbackHint").textContent=staticPulse?"静态扫描：每次点击只输出一次。Vgate 提前建立并延后归零；Vin 保持指定时长后归零。长脉冲使用已有 FPGA 定时事件固件。":
+    "普通波形每次触发连续播放两遍预览单元；组间等待设定时间。组数为 1 时只触发一次。";
   document.body.classList.toggle("busy",state.busy);
   for(const id of ["importScene","saveScene","downloadScene","syncPairs"])el(id).disabled=state.busy;
 }
@@ -484,31 +608,41 @@ function syncPairs(){
     const scene=collectScene();
     for(const [a,b,label] of [[0,1,"A"],[2,3,"B"]]){
       const source=scene.channels[a],target=scene.channels[b];
-      for(const key of ["topology","mode","variant","component","frequency_hz","phase_deg","parameters"]){
+      const changed=target.topology!==source.topology||target.mode!==source.mode||target.signal===source.signal;
+      for(const key of ["topology","mode","variant","component"]){
         if(source[key]===undefined)delete target[key];else target[key]=JSON.parse(JSON.stringify(source[key]));
       }
       target.enabled=source.enabled;target.signal=source.signal==="vin"?"gate":"vin";
-      target.offset_v=0;source.pair=label;target.pair=label;
+      source.pair=label;target.pair=label;
       const e=entry(target.topology,target.mode),c=e.cases.find(x=>x.variant===target.variant);
-      target.amplitude_v=Math.min(10,Math.max(...c[`${target.signal}_range_v`].map(Math.abs)));
+      if(changed){
+        target.parameters={};target.time_offset_us=0;target.offset_v=0;
+        delete target.frequency_hz;
+        target.amplitude_v=Math.min(10,Math.max(...c[`${target.signal}_range_v`].map(Math.abs)));
+      }
+      if(!constantBinding(source)&&!constantBinding(target)){
+        if(source.mode===26){target.frequency_hz=source.frequency_hz;delete target.duration_us;}
+        else target.duration_us=source.duration_us;
+      }
     }
-    applyScene(scene);log("两组配对的拓扑、模式、实验、分段、频率和相位已同步。","success");
+    applyScene(scene);log("两组配对的拓扑、模式、实验和分段已同步；两路均为动态输出时同步时窗，各路电压、边沿和时间偏移保留。","success");
   }catch(error){log(`配对失败：${error.message}`,"error")}
 }
 
 function configureStaticPair34(){
   const scene={...(state.scene||{})};
+  scene.static_pulse=true;scene.repeat_count=1;
   const old=Array.isArray(scene.channels)?scene.channels:[];
   scene.channels=[1,2].map(n=>({...old.find(c=>Number(c.channel)===n),channel:n,enabled:false}));
   for(const [channel,signal,amplitude] of [[3,"vin",1],[4,"gate",0]]){
     scene.channels.push({channel,enabled:true,topology:6,mode:24,signal,
-      variant:0,component:"pulse",frequency_hz:10000,amplitude_v:amplitude,
-      offset_v:0,phase_deg:0,pair:"B",
-      parameters:{period_us:100,start_us:10,width_us:10}});
+      variant:0,component:"pulse",duration_us:100,amplitude_v:amplitude,
+      offset_v:0,time_offset_us:0,pair:"B",
+      parameters:signal==="vin"?{width_us:2000}:{gate_lead_us:300,gate_tail_us:300}});
   }
   scene.interval_s=1;scene.repeat_count=1;
   applyScene(scene);
-  log("已设 DAC3=Vin 单脉冲、DAC4=Vgate 恒压。请分别调整两张卡的电压，并在 DAC3 调脉宽。","success");
+  log("已设 DAC3=Vin 单脉冲、DAC4=Vgate 有限包络。请设置两路电压、Vin 脉宽以及 Vgate 提前/延后时间。","success");
 }
 
 async function send(){
@@ -574,7 +708,7 @@ el("channelEditors").addEventListener("change",event=>{
     const component=card.querySelector('[data-field="component"]').value;
     for(const target of peer?[card,peer]:[card]){
       if(field==="variant"&&[11,12].includes(Number(card.querySelector('[data-field="mode"]').value)))
-        for(const key of ["vin_frequency_khz","vin_duty_percent","vin_width_us","pulse_gap_us","pulse_period_us","width_us"])
+        for(const key of ["vin_period_us","vin_duty_percent","vin_width_us","pulse_gap_us","pulse_period_us","width_us"])
           target.querySelector(`[data-param="${key}"]`).value="";
       updateVariantChoices(target,variant,component);
       target.querySelector('[data-field="amplitude"]').value=peakFor(target);
@@ -585,13 +719,13 @@ el("channelEditors").addEventListener("change",event=>{
     card.querySelector('[data-field="amplitude"]').value=peakFor(card);
   }
   if(field==="enabled")card.classList.toggle("disabled",!event.target.checked);
-  syncExtraParameter(card,event.target);updateSimpleControls(card);
+  updateSimpleControls(card);syncPairedWindow(card,event.target);
   updatePairStatus();
   schedulePreview();
 });
 el("channelEditors").addEventListener("input",event=>{
   const card=event.target.closest(".channel-card");
-  if(card){syncExtraParameter(card,event.target);updateSimpleControls(card)}
+  if(card){updateSimpleControls(card);syncPairedWindow(card,event.target)}
   schedulePreview();
 });
 el("channelEditors").addEventListener("click",event=>{

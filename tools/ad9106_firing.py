@@ -11,7 +11,7 @@ from operator import xor
 from pathlib import Path
 
 from ad9106_uart import decode_reply, STATUS
-from firing_waveforms import make_waveform, select_entry, absolute_levels
+from firing_waveforms import make_waveform, select_entry, absolute_levels, binding_frequency, align_resonator_gate, binding_phase, binding_time_offset
 
 ROOT=Path(__file__).resolve().parents[1]
 HARDWARE_PATTERN_REPEATS=2
@@ -65,36 +65,14 @@ def common_frequency(frequencies):
 
 
 def sample_wave(wave,n,cycles,phase,scale,offset,full_scale,zero,sample_count=None,strict=False):
-    if strict and wave.points:
-        for a,b in zip(wave.points,wave.points[1:]):
-            width=(b[0]-a[0])/wave.period_us*n/cycles
-            if 0 < width < 1-1e-9:
-                raise ValueError("低频扩展无法保留短平台或边沿细节：该段不足一个 DAC 采样间隔")
-    values=[voltage_code(wave.value(i*cycles/n+phase)*scale+offset,full_scale,zero)
-            for i in range(n if sample_count is None else sample_count)]
-    if strict: return values,0
-    snaps=0
-    # Preserve sub-sample plateaus as one sample, with an explicit quality note.
-    # Distinct narrow events colliding on one sample are rejected rather than merged.
-    assigned={}
     if wave.points:
         for a,b in zip(wave.points,wave.points[1:]):
-            if a[1]!=b[1] or b[0]<=a[0]: continue
             width=(b[0]-a[0])/wave.period_us*n/cycles
-            if width>=1: continue
-            code=voltage_code(a[1]*scale+offset,full_scale,zero)
-            for cycle in range(cycles):
-                middle=((a[0]+b[0])/2/wave.period_us+cycle-phase)*n/cycles
-                nearest=int(math.floor(middle+.5))%n
-                # Track the event even if ordinary sampling already hit it:
-                # two separate equal-height peaks still must not merge.
-                event=(a[0],b[0],cycle)
-                if nearest in assigned and assigned[nearest]!=event:
-                    raise ValueError("Distinct narrow plateaus collide at this sample resolution")
-                assigned[nearest]=event
-                if values[nearest]!=code:
-                    values[nearest]=code; snaps+=1
-    return values,snaps
+            if (strict or a[1]==b[1]) and 0 < width < 1-1e-9:
+                raise ValueError("无法保留短平台或间隙：该段不足一个 DAC 采样间隔；不会自动拉宽或合并脉冲")
+    values=[voltage_code(wave.value(i*cycles/n+phase)*scale+offset,full_scale,zero)
+            for i in range(n if sample_count is None else sample_count)]
+    return values,0
 
 
 def zero_tail_length(wave,n,cycles,phase,scale,offset,zero):
@@ -104,7 +82,7 @@ def zero_tail_length(wave,n,cycles,phase,scale,offset,zero):
     Phase-shifted and analytic waves deliberately use only the original path.
     """
     if not wave.points or wave.analytic or phase%1 != 0:
-        raise ValueError("低频扩展仅适用于无相移且末尾回到零码的分段波形")
+        raise ValueError("末尾等待优化仅适用于无循环时间偏移且末尾回到零码的分段波形")
     if any(abs(v*scale+offset-zero)>1e-12 for _,v in wave.points[-1:]):
         raise ValueError("波形末尾不是零码，不能用芯片空闲段代替")
     last=0
@@ -116,7 +94,10 @@ def zero_tail_length(wave,n,cycles,phase,scale,offset,zero):
     return min(n,max(1,math.ceil((cycles-1+last/wave.period_us)*n/cycles)+1))
 
 
-def compile_scene(config,catalog,_compact=False):
+def compile_scene(config,catalog,_compact=False,_capacity_failures=None,_waveforms=None):
+    if config.get("static_pulse"):
+        from static_pulse import compile_static_pulse
+        return compile_static_pulse(config,catalog)
     if any(b.get("enabled",True) and int(b.get("mode",0)) in (25,26) for b in config.get("channels",[])):
         from basic_waveforms import compile_basic_scene
         return compile_basic_scene(config,catalog)
@@ -131,34 +112,40 @@ def compile_scene(config,catalog,_compact=False):
         if channel not in (1,2,3,4) or channel in used: raise ValueError("channel must be unique and in 1..4")
         used.add(channel)
         if not binding.get("enabled",True): continue
-        wave,entry,case=make_waveform(catalog,binding)
-        frequency=Fraction(str(binding["frequency_hz"]))
-        if frequency<=0: raise ValueError("frequency_hz must be positive")
-        if int(binding["mode"])==24:
+        if _waveforms is not None and channel in _waveforms:
+            entry,case=select_entry(catalog,int(binding["topology"]),int(binding["mode"]),binding.get("variant",0))
+            wave=_waveforms[channel]
+        else: wave,entry,case=make_waveform(catalog,binding)
+        frequency=binding_frequency(binding) if wave.constant is None else Fraction(100000)
+        if int(binding["mode"])==24 and wave.constant is None:
             period=Fraction(str(binding.get("parameters",{}).get("period_us",100)))
             if abs(float(frequency*period)-1000000)>0.001:
-                raise ValueError("静态扫描 frequency_hz 必须等于 1000000/period_us，以保持脉宽准确")
+                raise ValueError("静态扫描时窗时长必须与 period_us 一致，以保持脉宽准确")
         reference_peak=max(abs(v) for v in case[binding["signal"]+"_range_v"])
         amplitude=float(binding.get("amplitude_v",min(full_scale,reference_peak)))
-        offset=float(binding.get("offset_v",0)); phase=float(binding.get("phase_deg",0))/360
+        offset=float(binding.get("offset_v",0)); phase=binding_phase(binding,frequency) if wave.constant is None else 0
         if not all(math.isfinite(x) for x in (amplitude,offset,phase)) or amplitude<0:
             raise ValueError("Invalid amplitude/offset/phase")
         scale=1 if absolute_levels(binding) else amplitude/reference_peak if reference_peak else 0
         row={"channel":channel,"wave":wave,"entry":entry,"case":case,"binding":binding,
              "frequency":frequency,"scale":scale,"offset":offset,"phase":phase,
+             "time_offset_us":binding_time_offset(binding,frequency) if wave.constant is None else 0,
              "amplitude_v":amplitude,"reference_peak_v":reference_peak}
         prepared.append(row)
         if binding.get("pair"): pairs.setdefault(str(binding["pair"]),[]).append(row)
     for name,rows in pairs.items():
         if len(rows)!=2 or {r["binding"]["signal"] for r in rows}!={"vin","gate"}:
             raise ValueError("配对 {} 未配对成功：需要恰好一条启用的 Vin 和一条启用的 Vgate；单路测试请将配对设为“无”".format(name))
-        keys=("topology","mode","variant","component","frequency_hz","phase_deg")
-        if int(rows[0]["binding"]["mode"])!=24: keys+=("parameters",)
+        keys=("topology","mode","variant","component")
         for key in keys:
             default={"variant":0,"component":rows[0]["entry"]["components"][0],"parameters":{},"phase_deg":0}.get(key)
             if rows[0]["binding"].get(key,default)!=rows[1]["binding"].get(key,default):
-                label={"topology":"拓扑","mode":"模式","variant":"实验变体","component":"序列分段","frequency_hz":"包络频率","phase_deg":"相位","parameters":"时序参数"}[key]
+                label={"topology":"拓扑","mode":"模式","variant":"实验变体","component":"序列分段","phase_deg":"相位","parameters":"时序参数"}[key]
                 raise ValueError("配对 {} 的两路{}不一致，请同步配对设置".format(name,label))
+        if int(rows[0]["binding"]["mode"])==11:
+            vin=next(r for r in rows if r["binding"]["signal"]=="vin")
+            gate=next(r for r in rows if r["binding"]["signal"]=="gate")
+            align_resonator_gate(vin["wave"],gate["wave"],vin["frequency"],gate["frequency"],gate["case"]["gate_range_v"][1])
     active=[r for r in prepared if r["wave"].constant is None and r["scale"]!=0]
     static_active=[r for r in active if int(r["binding"]["mode"])==24]
     if static_active and (len(static_active)!=len(active) or len({r["frequency"] for r in static_active})!=1):
@@ -172,7 +159,7 @@ def compile_scene(config,catalog,_compact=False):
     ideal=Fraction(str(dac_clock))/base*minimum_multiple
     multipliers={minimum_multiple}
     if ideal.denominator<=64: multipliers.add(minimum_multiple*ideal.denominator)
-    candidates=[]; failures=[]
+    candidates=[]; failures=[]; capacity_failures=list(_capacity_failures or [])
     for multiple in sorted(multipliers):
         target_ticks=dac_clock/float(base)*multiple
         for hold in range(1,17):
@@ -198,6 +185,8 @@ def compile_scene(config,catalog,_compact=False):
                         channels.append({"channel":channel,"source":"constant","constant_code":0,"frequency_hz":0})
                         continue
                     wave=row["wave"]; cycles=int(row["frequency"]/base)*multiple if wave.constant is None else 0
+                    phase=(-row["time_offset_us"]*cycles*dac_clock/ticks/1e6
+                           if "time_offset_us" in row["binding"] else row["phase"])
                     if wave.constant is not None or row["scale"]==0:
                         value=(wave.constant or 0)*row["scale"]+row["offset"]
                         codes=[voltage_code(value,full_scale,zero)]; snaps=0
@@ -205,21 +194,22 @@ def compile_scene(config,catalog,_compact=False):
                         count=n
                         if _compact:
                             try:
-                                count=zero_tail_length(wave,n,cycles,row["phase"],row["scale"],row["offset"],zero)
+                                count=zero_tail_length(wave,n,cycles,phase,row["scale"],row["offset"],zero)
                             except ValueError:
                                 if n>4096: raise
                             if count>4096:
-                                raise ValueError("有效波形及内部间隙超过 SRAM 容量，不能保留细节")
-                        codes,snaps=sample_wave(wave,n,cycles,row["phase"],row["scale"],row["offset"],full_scale,zero,
-                                               sample_count=count,strict=_compact)
-                        if _compact and min(codes)==max(codes):
-                            raise ValueError("低频扩展会使动态波形退化为直流，已拒绝")
+                                raise ValueError("有效波形及内部间隙需要 {} 点，超过共享 4096 点容量，不能保留细节".format(count))
+                        codes,snaps=sample_wave(wave,n,cycles,phase,row["scale"],row["offset"],full_scale,zero,
+                                               sample_count=count)
+                        if min(codes)==max(codes):
+                            raise ValueError("动态波形在当前采样或电压精度下退化为直流，已拒绝；请调整时长或幅值")
                     is_dc=min(codes)==max(codes)
                     result={"channel":channel,"topology":row["entry"]["topology"],"mode":row["entry"]["mode"],
                             "variant":row["case"]["variant"],"experiment":row["case"]["experiment"],
                             "signal":row["binding"]["signal"],"component":row["binding"].get("component",row["entry"]["components"][0]),
                             "requested_frequency_hz":float(row["frequency"]),"frequency_hz":0 if is_dc else cycles*dac_clock/ticks,
                             "cycles_per_frame":0 if is_dc else cycles,"amplitude_v":row["amplitude_v"],
+                            "time_offset_us":row["time_offset_us"],
                             "reference_peak_v":row["reference_peak_v"],"min_code":min(codes),"max_code":max(codes),
                             "nominal_min_v":zero+min(codes)*full_scale/2048,"nominal_max_v":zero+max(codes)*full_scale/2048,
                             "snapped_short_plateaus":snaps,"reference_period_us":wave.period_us,
@@ -234,9 +224,14 @@ def compile_scene(config,catalog,_compact=False):
                         result.update(start=allocations[key],stop=allocations[key]+len(codes)-1,samples=codes,
                                       zero_tail_samples=n-len(codes))
                     channels.append(result)
-                if len(memory)>4096: continue
+                if len(memory)>4096:
+                    capacity_failures.append((len(memory),hold,
+                        "、".join("DAC{} {} 点".format(c["channel"],len(c["samples"]))
+                                  for c in channels if c["source"]=="sram")))
+                    continue
             except ValueError as ex:
-                failures.append(str(ex)); continue
+                failures.append("HOLD={}（采样间隔 {:.6g} μs）时，DAC{}：{}".format(
+                    hold,hold/dac_clock*1e6,channel,ex)); continue
             score=(round(error,12),hold,len(memory),multiple)
             candidates.append((score,dict(dac_clock_hz=dac_clock,full_scale_v=full_scale,zero_code_v=zero,
                 frame_frequency_hz=dac_clock/ticks,pattern_ticks=ticks,pattern_period=ticks//period_base,
@@ -244,11 +239,35 @@ def compile_scene(config,catalog,_compact=False):
                 frequency_error_ppm=error*1e6,channels=channels,memory=memory)))
     if not candidates:
         if not _compact:
-            return compile_scene(config,catalog,_compact=True)
-        detail=("; "+failures[0]) if failures else ""
-        raise ValueError("Scene cannot fit AD9106 shared 4096-word SRAM / HOLD 1..16 / common period and frequency tolerance"+detail+
-                         "。无法在当前频率保留波形细节，未发送配置。请恢复原频率或缩短有效波形；不会自动删点、拉宽脉冲或更改其他通道频率。")
+            return compile_scene(config,catalog,_compact=True,_capacity_failures=capacity_failures,_waveforms=_waveforms)
+        if capacity_failures:
+            words,hold,usage=min(capacity_failures)
+            detail="；已检查方案中占用最少的可采样方案：HOLD={}，{}，去重后合计 {} 点，超出 {} 点".format(
+                hold,usage,words,words-4096)
+            if failures: detail+="；其他采样方案仍有约束，例如："+failures[-1]
+        else:
+            detail=("；"+failures[-1]) if failures else "；未找到同时满足公共播放周期、采样点数和计时误差的方案"
+        raise ValueError("当前场景超出 AD9106 共享 4096 点存储 / HOLD 1..16 / 公共时窗及计时误差限制"+detail+
+                         "。无法在当前时长保留波形细节，未发送配置。请按上述原因调整有效时长、脉冲数量或过短的边沿；不会自动删点、拉宽脉冲或更改其他通道时长。")
     plan=min(candidates,key=lambda c:c[0])[1]
+    # Report actual allocation, rather than implying that each DAC owns 1024/2048 words.
+    plan["sample_interval_us"]=plan["hold"]/dac_clock*1e6
+    plan["sram_free_words"]=4096-plan["sram_words"]
+    for c in plan["channels"]:
+        c["sram_words"]=len(c["samples"]) if c["source"]=="sram" else 0
+        c["shared_with"]=[other["channel"] for other in plan["channels"]
+            if c["source"]==other["source"]=="sram" and other["channel"]!=c["channel"]
+            and (c["start"],c["stop"])==(other["start"],other["stop"])]
+        c["sampling_warnings"]=[]
+        row=next((r for r in prepared if r["channel"]==c["channel"]),None)
+        if c["source"]=="sram" and row and row["wave"].points:
+            segments=[b[0]-a[0] for a,b in zip(row["wave"].points,row["wave"].points[1:]) if b[0]>a[0]]
+            if segments:
+                shortest=min(segments)/row["wave"].period_us/c["frequency_hz"]*1e6
+                c["shortest_segment_us"]=shortest
+                if shortest < plan["sample_interval_us"]*(1-1e-9):
+                    c["sampling_warnings"].append("最短边沿或平台 {:.6g} μs 小于采样间隔 {:.6g} μs，无法精确还原该段".format(
+                        shortest,plan["sample_interval_us"]))
     plan["storage_mode"]="zero_tail" if _compact else "full_frame"
     # Each trigger plays two SRAM units; the chip ends the finite burst.
     plan["pattern_duration_us"]=plan["pattern_ticks"]/plan["dac_clock_hz"]*1e6
@@ -292,7 +311,8 @@ def export_plan(plan,directory):
             writer=csv.writer(stream); writer.writerow(["sample","time_us","code","nominal_volts"])
             codes=channel.get("samples",[channel.get("constant_code",0)])
             for i,code in enumerate(codes):
-                writer.writerow([i,i*channel.get("preview_step_us",plan["hold"]/plan["dac_clock_hz"]*1e6),code,plan["zero_code_v"]+code*plan["full_scale_v"]/2048])
+                time_us=channel["sample_times_us"][i] if "sample_times_us" in channel else i*channel.get("preview_step_us",plan["hold"]/plan["dac_clock_hz"]*1e6)
+                writer.writerow([i,time_us,code,plan["zero_code_v"]+code*plan["full_scale_v"]/2048])
             if channel.get("zero_tail_samples",0):
                 for i in sorted({len(codes),plan["samples_per_frame"]-1}):
                     writer.writerow([i,i*plan["hold"]/plan["dac_clock_hz"]*1e6,0,plan["zero_code_v"]])
@@ -343,14 +363,16 @@ def send_retrigger(port_name,baud=115200):
 
 
 def report(plan):
-    print("Common frame {:.9f} Hz; HOLD={}; SRAM={}/4096; error={:.3f} ppm".format(
-        plan["frame_frequency_hz"],plan["hold"],plan["sram_words"],plan["frequency_error_ppm"]))
+    print("Common frame {:.9f} us; HOLD={}; SRAM={}/4096".format(
+        plan["pattern_duration_us"],plan["hold"],plan["sram_words"]))
     for c in plan["channels"]:
-        print("DAC{} {}: {} Hz; codes {}..{}{}".format(c["channel"],c["source"],c.get("frequency_hz",0),
+        duration="{:.9f} us".format(1e6/c["frequency_hz"]) if c.get("frequency_hz") else "DC"
+        if c.get("source")=="dds": duration="{:.9f} Hz".format(c["frequency_hz"])
+        print("DAC{} {}: {}; codes {}..{}{}".format(c["channel"],c["source"],duration,
             c.get("min_code",c.get("constant_code",0)),c.get("max_code",c.get("constant_code",0)),
             "; short plateaus snapped={}".format(c.get("snapped_short_plateaus",0))))
         if c.get("reference_peak_v",0)>plan["full_scale_v"]: print("  Reference peak exceeds output range; selected amplitude was scaled explicitly in this plan.")
-        if "sine_carrier_hz" in c: print("  Sine Gate carrier: {:.9f} Hz".format(c["sine_carrier_hz"]))
+        if "sine_carrier_hz" in c: print("  Sine Gate frequency: {:.9f} Hz".format(c["sine_carrier_hz"]))
 
 
 def main():
@@ -367,8 +389,14 @@ def main():
             p.add_argument("--channel",type=int,required=True); p.add_argument("--topology",type=int,required=True)
             p.add_argument("--mode",type=int,required=True); p.add_argument("--variant",default="0")
             p.add_argument("--signal",choices=["vin","gate"],required=True); p.add_argument("--component")
-            p.add_argument("--frequency",type=float,required=True); p.add_argument("--amplitude",type=float)
-            p.add_argument("--offset",type=float,default=0); p.add_argument("--phase",type=float,default=0)
+            timing=p.add_mutually_exclusive_group(required=True)
+            timing.add_argument("--duration-us",type=float,help="整组时窗 / 标准波形单周期时长，单位 μs")
+            timing.add_argument("--frequency",type=float,help="正弦频率，单位 Hz；也兼容旧版波形频率输入")
+            p.add_argument("--amplitude",type=float)
+            p.add_argument("--offset",type=float,default=0)
+            shift=p.add_mutually_exclusive_group()
+            shift.add_argument("--time-offset-us",type=float,help="循环时间偏移：正数延后，负数提前，单位 μs")
+            shift.add_argument("--phase",type=float,help=argparse.SUPPRESS)
     args=parser.parse_args()
     from firing_gui_core import load_catalog
     catalog=load_catalog()
@@ -391,7 +419,11 @@ def main():
                 for member in config.get("channels",[]):
                     if member.get("pair")==old["pair"]: member.pop("pair",None)
             binding=dict(channel=args.channel,topology=args.topology,mode=args.mode,variant=args.variant,
-                         signal=args.signal,frequency_hz=args.frequency,offset_v=args.offset,phase_deg=args.phase)
+                         signal=args.signal,offset_v=args.offset)
+            if args.phase is not None: binding["phase_deg"]=args.phase
+            else: binding["time_offset_us"]=args.time_offset_us or 0
+            if args.duration_us is not None: binding["duration_us"]=args.duration_us
+            else: binding["frequency_hz"]=args.frequency
             if args.amplitude is not None: binding["amplitude_v"]=args.amplitude
             if args.component: binding["component"]=args.component
             config["channels"]=[b for b in config.get("channels",[]) if b["channel"]!=args.channel]+[binding]

@@ -16,21 +16,21 @@
 python tools/ad9106_firing.py catalog --topology 6 --mode 9
 ```
 
-让 DAC4 输出拓扑 6、第 21 类的完整多幅值 Vin 序列，包络重复频率 100 kHz、最高幅值 5 V：
+让 DAC4 输出拓扑 6、第 21 类的完整多幅值 Vin 序列，整组时窗 10 μs、最高幅值 5 V：
 
 ```powershell
-python tools/ad9106_firing.py set --channel 4 --topology 6 --mode 21 --signal vin --component sequence --frequency 100000 --amplitude 5 --port COM3
+python tools/ad9106_firing.py set --channel 4 --topology 6 --mode 21 --signal vin --component sequence --duration-us 10 --amplitude 5 --port COM3
 ```
 
 只输出其中中档电压，其他已配置通道保留其波形配置：
 
 ```powershell
-python tools/ad9106_firing.py set --channel 4 --topology 6 --mode 21 --signal vin --component mid --frequency 100000 --amplitude 5 --port COM3
+python tools/ad9106_firing.py set --channel 4 --topology 6 --mode 21 --signal vin --component mid --duration-us 10 --amplitude 5 --port COM3
 ```
 
 以上幅值按完整原始范围缩放：原始三档 3/4.7/5 V，`--amplitude 5` 时选 mid 得到约 4.7 V；要单独提高该分量，可调整幅值、偏移或 JSON 中的 `parameters.levels_v`。`--amplitude` 不是峰峰值。
 
-同时输出两对同步 Vin/Vgate（第一对 50 kHz，第二对 100 kHz）：
+同时输出两对同步 Vin/Vgate（第一对时窗 20 μs，第二对 10 μs）：
 
 ```powershell
 python tools/ad9106_firing.py program --scene waveforms/example_two_pairs.json --port COM3
@@ -58,8 +58,8 @@ python tools/ad9106_firing.py program --scene waveforms/example_two_pairs.json -
 | 8 | II 类兴奋性 | Vin 工作平台；近阈值幅值对照用 variant |
 | 9 | 发放延迟 | 不同电压 Vin 探测脉冲分别列为 variant |
 | 10 | 阈下振荡 | Vin 平台；Gate 正弦偏置或平坦对照 |
-| 11 | 共振器 | Vin 方波内部频率、占空比、数量可调；Gate 正弦频率独立；对齐/错相等用 variant |
-| 12 | 积分器 | variant=0 快脉冲、variant=1 慢脉冲，分开测试；内部频率、占空比、数量可调；Gate 恒压 |
+| 11 | 共振器 | Vin 方波单周期时长、占空比、数量可调；Gate 正弦频率独立；默认峰值对齐方波中心 |
+| 12 | 积分器 | variant=0 快脉冲、variant=1 慢脉冲，分开测试；内部单周期时长、占空比、数量可调；Gate 恒压 |
 | 13 | 反跳单发 | 负 Vin 后释放；保留原文正偏置对照 |
 | 14 | 反跳簇发 | 负 Vin 后释放；对照用 variant |
 | 15 | 阈值可变性 | Vin 探测序列配合多档 Gate；`sequence/low/mid/high` |
@@ -74,7 +74,7 @@ python tools/ad9106_firing.py program --scene waveforms/example_two_pairs.json -
 
 未列出 component 的模式使用 `default`。`near/far` 保留该组内部时序；单选 `low/mid/high` 将所选电平的探测事件移到模板的首个探测位置。Gate 工作平台默认采用直流源，不反复播放实验启动时的一次性上电过程。拓扑 6 的默认 23 组预览见 [模板总览](firing_verification/topology6_template_overview.png)。
 
-## 场景参数、频率与幅值
+## 场景参数、时长与幅值
 
 JSON 顶层包含 `dac_clock_hz`、`full_scale_v`、`zero_code_v`、`max_frequency_error_ppm` 和 `channels`。通道条目支持：
 
@@ -84,33 +84,37 @@ JSON 顶层包含 `dac_clock_hz`、`full_scale_v`、`zero_code_v`、`max_frequen
 | `topology` / `mode` | 3/5/6/7；1～23 |
 | `variant` / `component` | 实验变体及序列分段；默认 0 及目录中的首项 |
 | `signal` | `vin` 或 `gate` |
-| `frequency_hz` | **整段输入模板的包络重复频率**，必须为正数 |
+| `duration_us` | **整段输入模板的实际时窗时长**；模式 25/26 为单周期时长，必须为正的有限数值 |
+| `frequency_hz` | 旧场景兼容字段；新场景使用 `duration_us`。两者同时出现时必须互为倒数（1e6 / μs） |
 | `amplitude_v` | 原始电压绝对峰值缩放到此值，再叠加 offset；默认原始峰值与 10 V 中较小值 |
 | `offset_v` / `phase_deg` | 电压偏移 / 模板相位；默认 0 |
-| `pair` | 同名两路须恰好一个 Vin、一个 Gate，模板、频率、相位和时序参数一致 |
+| `pair` | 同名两路须恰好一个 Vin、一个 Gate，拓扑、模式、变体和分段一致；各路波形参数、时长和时间偏移独立 |
 | `enabled` | false 时该通道输出零码 |
 | `parameters` | 修改下述参考模板参数 |
 
-例如负 Vin 的 `amplitude_v:5` 表示最低约 −5 V；偏置会进一步平移整个波形。正弦 Gate 的载波频率在 `plan.json` 的 `sine_carrier_hz` 中单独报告，直流 Gate 的实际重复频率报告为 0。这里的频率不是神经元输出的发放频率，也不是脉冲列内部的脉冲重复频率。改变包络频率会等比例缩放旧参考模板的脉宽、间隔和斜坡时长；下面新增的实际时间字段会补偿该缩放，保持所填时间。
+例如负 Vin 的 `amplitude_v:5` 表示最低约 −5 V；偏置会进一步平移整个波形。正弦 Gate 的载波频率在 `plan.json` 的 `sine_carrier_hz` 中单独报告，直流 Gate 的实际重复频率报告为 0。这里的频率不是神经元输出的发放频率，也不是脉冲列内部的脉冲重复频率。改变整组时窗时长会等比例缩放旧参考模板的脉宽、间隔和斜坡时长；下面新增的实际时间字段会补偿该缩放，保持所填时间。
 
 `parameters` 使用原图参考坐标的 us/V 单位，支持 `period_us/start_us/width_us/rise_us/fall_us/ramp_us/gap_us/pulse_period_us/pulse_count/gate_sine_period_us/gate_floor_v/gate_initial_v/gate_final_v/gate_baseline_v/levels_v`。各参数用于对应的波形族，例如 `levels_v` 是 15/21 类的三档电压，`gap_us` 用于第 22 类，`gate_sine_period_us` 用于正弦 Gate；不是每个模式都使用每个字段。第 22 类间隔从前一脉冲下降沿起点计量，包含下降时间。
 
-新增直接参数（保留原配置结构）：
+新增直接参数（保留原配置结构；旧 `vin_frequency_khz`、`gate_frequency_khz` 和 CLI `--frequency` 仍兼容）：
 
 | 字段 | 含义 |
 | --- | --- |
 | `vin_width_us` / `gate_width_us` | 各路实际脉宽，含边沿；覆盖旧共用 `width_us`。Gate 恒压或正弦时不使用 Gate 脉宽 |
+| `rise_time_us` / `fall_time_us` | 本路实际上升/下降时间；优先于旧参考坐标 `rise_us` / `fall_us`。显式脉冲边沿之和不能超过脉宽 |
 | `pulse_gap_us` | 03/12/20/22 的实际基线等待时间；脉宽与间隔相加才是起始到起始周期 |
-| `vin_frequency_khz` | 11 的实际 Vin 脉冲频率；与旧 `pulse_period_us` 二选一 |
+| `vin_period_us` | 11/12 的实际 Vin 方波单周期时长；与旧周期/间隔字段互斥 |
+| `gate_frequency_khz` | 10/11 的实际 Vgate 正弦频率（kHz）；11 的旧 `gate_period_us` 仍可导入并换算 |
+| `vin_duty_percent` | 11/12 方波占空比；脉宽 = 单周期时长 × 占空比 / 100 |
 | `level_low_v` / `level_mid_v` / `level_high_v` | 15 的 Gate、21 的 Vin 三档独立名义电压；不乘 `amplitude_v`，仍叠加 `offset_v`；允许只覆盖其中部分档位 |
 
-实际 μs 在波形生成器内乘以 `period_us × frequency_hz / 1e6` 转回参考坐标，原采样编译与串口协议不变。独立间隔与旧 `pulse_period_us`（22 为旧 `gap_us`）不能同时填写；网页会在使用新字段时清除相冲突的旧字段。03/20 的脉冲数默认 3，也可沿用 `pulse_count` 修改。12 的 Gate 在全部变体中均为恒压；旧变体名称保留供历史场景识别，不能据此推断仍有 Gate 缺口。
+实际 μs 在波形生成器内乘以 `parameters.period_us / duration_us` 转回参考坐标（未指定参考长度时使用模式默认值），原采样编译与串口协议不变。独立间隔与旧 `pulse_period_us`（22 为旧 `gap_us`）不能同时填写；网页会在使用新字段时清除相冲突的旧字段。03/20 的脉冲数默认 3，也可沿用 `pulse_count` 修改。12 的 Gate 在全部变体中均为恒压；旧变体名称保留供历史场景识别，不能据此推断仍有 Gate 缺口。
 
 后端按用户说明支持 ±10 V；本工程先采用名义换算 `V = zero_code_v + signed_code × full_scale_v / 2048`，默认 zero=0、full_scale=10。这是对板级传输关系的假设，需用实测校准，当前没有后端放大/偏置原理图。12 位码范围 −2048～2047，名义步进约 4.883 mV，正最大值约 +9.995 V。请求采样电压超出 ±10 V 会拒绝；原图 +12 V 激励默认整体缩放为峰值 10 V，计划中会提示。原文 3.5082/3.5085 V 等相差 0.3 mV 的对照，在固定 ±10 V 量程下可能得到相同数字码，不能保证保留该实验差异。
 
 AD9106 的四路共用 4096×12 位 SRAM 及周期控制。实现采用公共超周期，把各路所需的整数个模板写入各自存储区；直流不占 SRAM，相同采样数组复用存储。HOLD/周期基数都在 1～16 中搜索；周期最长 65535 个周期基数单位。频率误差默认限制为 1000 ppm，并保证每个非直流包络至少 32 点、正弦载波至少 8 点。时序和寄存器约束依据 [ADI AD9106 Rev.C 手册](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9106.pdf) 的 SRAM、Pattern Generator 和寄存器章节。
 
-因此各路可以有不同频率，但无法保证**任意四个频率组合**都能同时实现。存储不足、超周期过长或分辨率不够时，编译器在发串口前报错。`plan.json` 给出实际频率、码值、电压、时间步进和短平台量化数量；窄于一采样的平台可能量化为一点，不能认为仍保留原图脉宽。如需低频、多路任意独立频率且保留很窄脉冲，需要更换时钟/存储架构。
+因此各路可以有不同周期，但无法保证**任意四个周期组合**都能同时实现。存储不足、公共周期过长或分辨率不够时，编译器在发串口前报错。`plan.json` 给出实际时序、码值、电压、采样间隔、各路 SRAM 点数及共享对象。完整采样与末尾零码省略使用相同规则：不足一个采样间隔的平台或间隙拒绝，不补点；短边沿给出精度警告；动态波形采样后退化成恒压也拒绝。保留 `snapped_short_plateaus` 兼容字段，但新编译结果为 0。恒压不需要时窗，也不参与公共周期计算。
 
 ## FPGA 接口和事务流程
 
@@ -162,4 +166,10 @@ python tools/analyze_firing_sim.py
 顶层专项使用当前生成的 BD/wrapper、100 MHz/115200/1 MHz 正式参数，只有 MMCM 替换为功能时钟模型。模型仅用于隔离仿真，不加入 Vivado 综合源。新增测试可用 `source tools/add_uart_control.tcl` 加入 sim_1；脚本不修改设计顶层。修改 RTL 后正常重新综合、实现，不能复用旧 bitstream。完整结果及边界见 [FIRING_VERIFICATION.md](FIRING_VERIFICATION.md)。
 ## 单次播放与再次触发
 
-当前采用芯片有限次 SRAM 播放，FPGA 不再执行截止计时或自动 RUN 清零。PAT_TYPE=1、四路重复计数=0；COMMIT 与再次触发 44 均仅写 RUN=1、RAMUPDATE=1，随后拉低 TRIGGER。PC 控制重复次数和完整波形之间的间隔；正常结束后 RUN 保持 1、TRIGGER 保持低。停止按钮拉高 TRIGGER 并将数字增益/偏移/常数归零，不清 RUN。详见 [当前流程](AD9106_SINGLE_PATTERN.md)。
+普通 SRAM 模板采用芯片有限次播放，当前每次触发播放两个预览单元。COMMIT 与再次触发 44 写 RUN=1、RAMUPDATE=1，随后公共触发；电脑控制触发组数及组间间隔。停止按钮将数字增益/偏移/常数归零。历史单次 SRAM 流程见 [说明](AD9106_SINGLE_PATTERN.md)。
+
+有限静态扫描使用顶层 `static_pulse: true`、`repeat_count: 1`；启用通道均为模式 24。Vin 的 `parameters.width_us` 是实际脉宽；配对 Gate 使用 `gate_lead_us` 和 `gate_tail_us` 包住 Vin。长脉冲由现有 `0x7100/0x7101/0x7200…` FPGA 事件表切换常数/增益，末事件全部清零，SRAM 为 0；没有新增或修改 Verilog。合并后的独立事件至少间隔 300 μs，否则尝试整个包络的单次 SRAM 编译，失败即拒绝。两条路径都只播放一次。事件路径不受 SRAM 高电平点数或芯片 PAT_PERIOD 上限限制，受 32 位 100 MHz 事件计时范围限制（含启动/提交余量约 42.95 秒）。要求板上运行已有基本波形事件固件，详见 [固件说明](AD9106_BASIC_1KHZ.md)。
+
+事件预览和 CSV 的 `sample_times_us` 保留真实切换位置，阶跃两侧可有相同时间戳，不能按等距 SRAM 采样解释。不带 `static_pulse` 的旧模式 24 JSON 仍保留原编译行为。
+
+时间平移使用通道字段 `time_offset_us`（实际 μs，正数延后、负数提前），对应周期波形的循环平移。CLI 使用 `--time-offset-us`。旧 `phase_deg` / `--phase` 仍可读取，其正数含义为提前。共振对齐先根据未偏移的 Vin 脉冲中心建立，再分别应用两路时间偏移。标准正弦内部按实际 DDS 频率将时间换成寄存器相位；标准方波移动电平事件并重新检查 SPI 提交间隔。

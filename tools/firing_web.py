@@ -14,7 +14,7 @@ from urllib.parse import urlsplit, parse_qs
 from ad9106_firing import ROOT, compile_scene, export_plan, send_abort, send_plan, send_retrigger
 from ad9106_diagnostics import read_registers
 from firing_gui_core import available_ports, load_catalog, load_scene, probe_device, save_scene
-from firing_waveforms import make_waveform, absolute_levels
+from firing_waveforms import make_waveform, absolute_levels, binding_frequency, align_resonator_gate, binding_phase, binding_time_offset
 
 ASSETS=Path(__file__).resolve().parent/"firing_web"
 ASSET_TYPES={"/":"index.html","/app.js":"app.js","/style.css":"style.css"}
@@ -36,21 +36,51 @@ def public_preview(scene,catalog):
                 "mode":c.get("mode"),"variant":c.get("variant"),
                 "component":c.get("component"),"frequency_hz":c["frequency_hz"],
                 "carrier_hz":c.get("sine_carrier_hz"),
+                "period_us":1e6/c["frequency_hz"] if c["frequency_hz"] else None,
+                "carrier_period_us":1e6/c["sine_carrier_hz"] if c.get("sine_carrier_hz") else None,
                 "samples":c.get("samples",[c.get("constant_code",0)]),
+                "sample_times_us":c.get("sample_times_us"),"pulse_width_us":c.get("pulse_width_us"),
                 "total_samples":plan["samples_per_frame"] if c["source"]=="sram" else len(c.get("samples",[0])),
                 "zero_tail_samples":c.get("zero_tail_samples",0),
                 "zero_tail_us":c.get("zero_tail_samples",0)*step,
+                "sram_words":c.get("sram_words",len(c.get("samples",[])) if c["source"]=="sram" else 0),
+                "shared_with":c.get("shared_with",[]),
+                "sampling_warnings":c.get("sampling_warnings",[]),
+                "time_offset_us":c.get("time_offset_us",0),
                 "step_us":c.get("preview_step_us",step),"duration_us":plan["pattern_duration_us"],
                 "full_scale_v":plan["full_scale_v"],"zero_code_v":plan["zero_code_v"],
                 "min_v":c.get("nominal_min_v",0),"max_v":c.get("nominal_max_v",0),
                 "snapped":c.get("snapped_short_plateaus",0)})
         return {"ok":True,"channels":channels,
-                "summary":{"frame_hz":plan["frame_frequency_hz"],"sram_words":plan["sram_words"],
+                "summary":{"frame_hz":plan["frame_frequency_hz"],"frame_duration_us":plan["pattern_duration_us"],
+                           "max_duration_error_us":max((abs(1e6/c["frequency_hz"]-1e6/c["requested_frequency_hz"])
+                               for c in plan["channels"] if c["frequency_hz"] and c.get("requested_frequency_hz")),default=0),
+                           "sram_words":plan["sram_words"],
+                           "hardware_pattern_repeats":plan["hardware_pattern_repeats"],
+                           "static_pulse":plan.get("static_pulse",False),
+                           "sram_free_words":4096-plan["sram_words"],
+                           "sample_interval_us":step if any(c["source"]=="sram" for c in plan["channels"]) else None,
                            "hold":plan["hold"],"frequency_error_ppm":plan["frequency_error_ppm"],
                            "storage_mode":plan["storage_mode"],
                            "packet_count":len(plan["packets"])}}
     except (ValueError,KeyError,OverflowError,ZeroDivisionError) as error:
         rows={int(b["channel"]):b for b in scene.get("channels",[]) if isinstance(b,dict) and "channel" in b}
+        waves={}; pairs={}
+        for number,binding in rows.items():
+            if not binding.get("enabled",True): continue
+            try:
+                waves[number]=make_waveform(catalog,binding)
+                if binding.get("pair"): pairs.setdefault(binding["pair"],[]).append(binding)
+            except (ValueError,KeyError,OverflowError,TypeError,ZeroDivisionError): pass
+        for members in pairs.values():
+            if len(members)!=2 or {b.get("signal") for b in members}!={"vin","gate"}: continue
+            vin=next(b for b in members if b["signal"]=="vin"); gate=next(b for b in members if b["signal"]=="gate")
+            if vin.get("mode")!=11 or gate.get("mode")!=11: continue
+            if any(vin.get(k)!=gate.get(k) for k in ("topology","variant","component")): continue
+            try:
+                align_resonator_gate(waves[vin["channel"]][0],waves[gate["channel"]][0],binding_frequency(vin),
+                    binding_frequency(gate),waves[gate["channel"]][2]["gate_range_v"][1])
+            except (ValueError,KeyError,OverflowError,TypeError,ZeroDivisionError): pass
         channels=[]
         for number in range(1,5):
             binding=rows.get(number)
@@ -59,19 +89,21 @@ def public_preview(scene,catalog):
                                  "duration_us":10,"step_us":10,"full_scale_v":10,"zero_code_v":0})
                 continue
             try:
-                wave,_,case=make_waveform(catalog,binding)
-                frequency=float(binding["frequency_hz"])
+                wave,_,case=waves[number] if number in waves else make_waveform(catalog,binding)
+                frequency=float(binding_frequency(binding)) if wave.constant is None else 100000
                 amplitude=float(binding.get("amplitude_v",10))
                 offset=float(binding.get("offset_v",0))
-                phase=float(binding.get("phase_deg",0))/360
+                phase=binding_phase(binding,frequency) if wave.constant is None else 0
                 if not all(math.isfinite(v) for v in (frequency,amplitude,offset,phase)) or frequency<=0:
-                    raise ValueError("频率、幅值或偏移无效")
+                    raise ValueError("时长、幅值或偏移无效")
                 peak=max(abs(v) for v in case[binding["signal"]+"_range_v"])
                 scale=1 if absolute_levels(binding) else amplitude/peak if peak else 0
                 samples=[wave.value(i/699+phase)*scale+offset for i in range(700)]
                 channels.append({"channel":number,"source":"template","signal":binding["signal"],
+                    "time_offset_us":binding_time_offset(binding,frequency) if wave.constant is None else 0,
                     "topology":binding["topology"],"mode":binding["mode"],
-                    "frequency_hz":frequency,"samples":samples,
+                    "frequency_hz":frequency,"period_us":1e6/frequency if wave.constant is None else None,
+                    "carrier_period_us":wave.sine_period_us/wave.period_us*1e6/frequency if wave.sine_period_us else None,"samples":samples,
                     "duration_us":1e6/frequency,"step_us":1e6/frequency/699})
             except (ValueError,KeyError,OverflowError,TypeError,ZeroDivisionError) as suberror:
                 channels.append({"channel":number,"source":"error","error":str(suberror),"samples":[]})
@@ -125,15 +157,18 @@ class DashboardServer(ThreadingHTTPServer):
                     if self.cancel_event.is_set(): break
                     with self.lock:
                         job["cycle"]=cycle
-                        job["message"]="正在发送第 {}/{} 组触发（每组两遍）".format(cycle+1,repeat_count)
+                        job["message"]="正在发送第 {}/{} 组触发（每组 {} 遍）".format(cycle+1,repeat_count,plan["hardware_pattern_repeats"])
                     if cycle==0: send_plan(plan,port,progress=progress)
                     else:
                         send_retrigger(port)
                         with self.lock: job["done"]+=1
                     if cycle+1<repeat_count:
-                        with self.lock: job["message"]="第 {} 组已触发，等待两遍播放完成及 {} 秒间隔".format(cycle+1,interval_s)
+                        with self.lock: job["message"]="第 {} 组已触发，等待播放完成及 {} 秒间隔".format(cycle+1,interval_s)
                         if self.cancel_event.wait(interval_s+plan["burst_duration_us"]/1e6):
                             break
+                    elif plan.get("static_pulse"):
+                        with self.lock: job["message"]="单次脉冲已触发，等待包络结束并归零"
+                        self.cancel_event.wait(plan["burst_duration_us"]/1e6)
                 if self.cancel_event.is_set():
                     send_abort(port)
                     with self.lock: job["status"]="cancelled";job["message"]="已停止后续播放"
@@ -203,6 +238,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             data=(ASSETS/filename).read_bytes()
             mime="text/html" if filename.endswith("html") else "text/javascript" if filename.endswith("js") else "text/css"
             self.send_response(200); self.send_header("Content-Type",mime+"; charset=utf-8")
+            self.send_header("Cache-Control","no-store")
             self.send_header("Content-Length",str(len(data)))
             self.send_header("X-Content-Type-Options","nosniff")
             self.send_header("Content-Security-Policy","default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'")
