@@ -39,7 +39,7 @@
       </div>
 
       <div class="preview-pane">
-        <div class="section-head"><div><span class="kicker">03 · 编译预览</span><h2>四路输出波形预览</h2></div><span id="previewFlag" class="pill waiting">等待编译</span></div>
+        <div class="section-head"><div><span class="kicker">03 · 编译预览</span><h2 id="previewTitle">四路输出波形预览</h2></div><span id="previewFlag" class="pill waiting">等待编译</span></div>
         <div id="previewError" class="preview-error" hidden></div>
         <div class="stat-grid">
           <div class="stat"><span>公共播放单元时长</span><strong id="frameDuration">—</strong></div>
@@ -48,7 +48,7 @@
         </div>
         <p id="resourceNotes" class="preview-caption" role="status"></p>
         <div id="charts" class="charts"></div>
-        <p class="preview-caption">波形依据已编译的 DAC 码绘制，纵轴为名义电压；图文模板中未明确的时序为近似值。支持保留细节的波形可将时窗扩展至 1000 μs，末尾零码等待由芯片计时。超出能力时拒绝发送，不自动更改其他通道。编译失败时显示单路模板预览。</p>
+        <p id="previewCaption" class="preview-caption">波形依据已编译的 DAC 码绘制，纵轴为名义电压；图文模板中未明确的时序为近似值。支持保留细节的波形可将时窗扩展至 1000 μs，末尾零码等待由芯片计时。超出能力时拒绝发送，不自动更改其他通道。编译失败时显示单路模板预览。</p>
       </div>
     </section>
 

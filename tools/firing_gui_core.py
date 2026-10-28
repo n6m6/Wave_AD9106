@@ -36,7 +36,11 @@ def load_catalog():
             catalog["modes"].append({"topology":topology,"mode":mode,"name":name,
                 "description":description,"components":[name],"cases":[{"variant":0,"experiment":name,
                 "vin_range_v":[-1,1],"gate_range_v":[-1,1]}]})
-    from firing_waveforms import constant_output, PERIOD_US
+    from firing_waveforms import constant_output, PERIOD_US, select_entry
+    for topology in (3,5,6,7):
+        for mode in (27,28):
+            entry,_=select_entry(catalog,topology,mode)
+            catalog["modes"].append(entry)
     for entry in catalog["modes"]:
         topology,mode=entry["topology"],entry["mode"]
         reference=PERIOD_US.get(mode,100)

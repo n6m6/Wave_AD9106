@@ -14,7 +14,7 @@ from urllib.parse import urlsplit, parse_qs
 from ad9106_firing import ROOT, compile_scene, export_plan, send_abort, send_plan, send_retrigger
 from ad9106_diagnostics import read_registers
 from firing_gui_core import available_ports, load_catalog, load_scene, probe_device, save_scene
-from firing_waveforms import make_waveform, absolute_levels, binding_frequency, align_resonator_gate, binding_phase, binding_time_offset
+from firing_waveforms import make_waveform, absolute_levels, binding_frequency, align_resonator_gate, binding_phase, binding_time_offset, rhythm_binding
 
 ASSETS=Path(__file__).resolve().parent/"firing_web"
 ASSET_TYPES={"/":"index.html","/app.js":"app.js","/style.css":"style.css"}
@@ -33,7 +33,7 @@ def public_preview(scene,catalog):
             channels.append({
                 "channel":c["channel"],"source":c["source"],
                 "signal":c.get("signal"),"topology":c.get("topology"),
-                "mode":c.get("mode"),"variant":c.get("variant"),
+                "mode":c.get("mode"),"variant":c.get("variant"),"waveform":c.get("waveform"),
                 "component":c.get("component"),"frequency_hz":c["frequency_hz"],
                 "carrier_hz":c.get("sine_carrier_hz"),
                 "period_us":1e6/c["frequency_hz"] if c["frequency_hz"] else None,
@@ -46,6 +46,9 @@ def public_preview(scene,catalog):
                 "sram_words":c.get("sram_words",len(c.get("samples",[])) if c["source"]=="sram" else 0),
                 "shared_with":c.get("shared_with",[]),
                 "sampling_warnings":c.get("sampling_warnings",[]),
+                "max_phase_quantization_deg":c.get("max_phase_quantization_deg"),
+                "initial_phase_deg":c.get("initial_phase_deg"),
+                "rise_time_us":c.get("rise_time_us"),"fall_time_us":c.get("fall_time_us"),
                 "time_offset_us":c.get("time_offset_us",0),
                 "step_us":c.get("preview_step_us",step),"duration_us":plan["pattern_duration_us"],
                 "full_scale_v":plan["full_scale_v"],"zero_code_v":plan["zero_code_v"],
@@ -58,6 +61,7 @@ def public_preview(scene,catalog):
                            "sram_words":plan["sram_words"],
                            "hardware_pattern_repeats":plan["hardware_pattern_repeats"],
                            "static_pulse":plan.get("static_pulse",False),
+                           "rhythm_modulation":plan.get("rhythm_modulation"),
                            "sram_free_words":4096-plan["sram_words"],
                            "sample_interval_us":step if any(c["source"]=="sram" for c in plan["channels"]) else None,
                            "hold":plan["hold"],"frequency_error_ppm":plan["frequency_error_ppm"],
@@ -99,10 +103,14 @@ def public_preview(scene,catalog):
                 peak=max(abs(v) for v in case[binding["signal"]+"_range_v"])
                 scale=1 if absolute_levels(binding) else amplitude/peak if peak else 0
                 samples=[wave.value(i/699+phase)*scale+offset for i in range(700)]
+                rhythm=int(binding['mode']) in (27,28)
+                carrier=float(binding_frequency(rhythm_binding(binding))) if rhythm else frequency
                 channels.append({"channel":number,"source":"template","signal":binding["signal"],
+                    "waveform":('sine' if int(binding['mode'])==27 and binding['signal']=='gate' else 'square') if rhythm else None,
+                    "initial_phase_deg":binding.get('parameters',{}).get('rhythm_phase_deg',0) if rhythm else None,
                     "time_offset_us":binding_time_offset(binding,frequency) if wave.constant is None else 0,
                     "topology":binding["topology"],"mode":binding["mode"],
-                    "frequency_hz":frequency,"period_us":1e6/frequency if wave.constant is None else None,
+                    "frequency_hz":carrier,"period_us":1e6/carrier if wave.constant is None else None,
                     "carrier_period_us":wave.sine_period_us/wave.period_us*1e6/frequency if wave.sine_period_us else None,"samples":samples,
                     "duration_us":1e6/frequency,"step_us":1e6/frequency/699})
             except (ValueError,KeyError,OverflowError,TypeError,ZeroDivisionError) as suberror:
@@ -166,8 +174,8 @@ class DashboardServer(ThreadingHTTPServer):
                         with self.lock: job["message"]="第 {} 组已触发，等待播放完成及 {} 秒间隔".format(cycle+1,interval_s)
                         if self.cancel_event.wait(interval_s+plan["burst_duration_us"]/1e6):
                             break
-                    elif plan.get("static_pulse"):
-                        with self.lock: job["message"]="单次脉冲已触发，等待包络结束并归零"
+                    elif plan.get("static_pulse") or plan.get("finite_window"):
+                        with self.lock: job["message"]="单次波形已触发，等待观察窗结束并归零"
                         self.cancel_event.wait(plan["burst_duration_us"]/1e6)
                 if self.cancel_event.is_set():
                     send_abort(port)

@@ -1,0 +1,11 @@
+{
+  "dac_clock_hz": 148500000,
+  "full_scale_v": 10,
+  "zero_code_v": 0,
+  "repeat_count": 1,
+  "interval_s": 1,
+  "channels": [
+    {"channel": 1, "topology": 6, "mode": 27, "signal": "vin", "pair": "A", "duration_us": 200, "amplitude_v": 0.5, "offset_v": 0.5, "parameters": {"rhythm_on_us": 20, "rhythm_duty_percent": 50, "rhythm_phase_deg": 0, "rise_time_us": 0, "fall_time_us": 0}},
+    {"channel": 2, "topology": 6, "mode": 27, "signal": "gate", "pair": "A", "duration_us": 200, "amplitude_v": 0.5, "offset_v": 0.5, "parameters": {"rhythm_frequency_khz": 25, "rhythm_phase_deg": 0}}
+  ]
+}

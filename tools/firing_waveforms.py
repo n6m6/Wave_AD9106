@@ -21,6 +21,21 @@ EXTRA_PARAMETERS = {"vin_width_us", "gate_width_us", "pulse_gap_us", "vin_freque
                     "stage1_voltage_v", "stage2_voltage_v", *LEVEL_KEYS}
 
 
+def edge_time_parameters(parameters):
+    """Validate physical edge times while preserving legacy reference fields."""
+    result={}
+    for key in ("rise_time_us","fall_time_us"):
+        if key not in parameters:continue
+        try:
+            value=float(parameters[key])
+            if isinstance(parameters[key],bool) or not math.isfinite(value) or not 0<=value<=1:
+                raise ValueError()
+        except (ValueError,TypeError,OverflowError):
+            raise ValueError("上升时间和下降时间必须是 0～1 μs 的有限数值") from None
+        result[key]=value
+    return result
+
+
 def positive_time(value, label):
     """Keep decimal times rational, including reciprocals imported from old scenes."""
     try:
@@ -128,6 +143,12 @@ class Waveform:
 
 
 def select_entry(catalog, topology, mode, variant=0):
+    if mode in (27,28) and topology in (3,5,6,7):
+        if str(variant)!="0":raise ValueError("节律调制只有一个实验变体")
+        name="节律调制：Vin 方波 / Vgate 正弦" if mode==27 else "节律调制：Vin / Vgate 双方波"
+        case={"variant":0,"experiment":"rhythm","vin_range_v":[-1,1],"gate_range_v":[-1,1]}
+        return {"topology":topology,"mode":mode,"name":name,"description":name+"；频率和初始相位分别设置，观察窗结束归零。",
+                "components":["rhythm"],"cases":[case]},case
     if mode in (25,26) and topology in (3,5,6,7):
         if str(variant)!="0": raise ValueError("Basic waveform has one variant")
         name="square" if mode==25 else "sine"
@@ -152,9 +173,70 @@ def select_entry(catalog, topology, mode, variant=0):
     return entry,case
 
 
+def rhythm_square_value(cycles,frequency,duty,rise_us=0,fall_us=0):
+    """A full-period square; ON time includes its linear rise and fall."""
+    if rise_us==fall_us==0:return 1 if cycles%1<duty else -1
+    t=(cycles%1)*1e6/frequency
+    on_us=duty*1e6/frequency
+    if t>=on_us:return -1
+    if rise_us>0 and t<rise_us:return -1+2*t/rise_us
+    fall_start=on_us-fall_us
+    if math.isclose(rise_us+fall_us,on_us,rel_tol=1e-12,abs_tol=1e-12):fall_start=rise_us
+    if fall_us>0 and t>fall_start:return 1-2*(t-fall_start)/fall_us
+    return 1
+
+
+def rhythm_binding(binding):
+    """Translate an integrated rhythm mode into one sampled carrier."""
+    mode=int(binding["mode"]);signal=binding.get("signal")
+    if mode not in (27,28) or signal not in ("vin","gate"):
+        raise ValueError("节律新模式需要 Vin / Vgate 信号")
+    if str(binding.get("variant",0))!="0" or binding.get("component","rhythm")!="rhythm":
+        raise ValueError("节律新模式只有默认变体和 rhythm 分段")
+    p=binding.get("parameters",{})
+    square=signal=="vin" or mode==28
+    allowed={"rhythm_phase_deg","rhythm_duty_percent"} if square else {"rhythm_phase_deg"}
+    if square:allowed.update(("rise_time_us","fall_time_us"))
+    allowed.add("rhythm_on_us" if signal=="vin" else "rhythm_frequency_khz")
+    if set(p)-allowed:raise ValueError("节律模式含有不适用的参数："+", ".join(sorted(set(p)-allowed)))
+    try:
+        duty=float(p.get("rhythm_duty_percent",50))
+        if not math.isfinite(duty) or isinstance(p.get("rhythm_duty_percent"),bool) or not 0<duty<100:raise ValueError()
+    except (ValueError,TypeError,OverflowError):raise ValueError("方波占空比必须在 0～100% 之间") from None
+    try:
+        phase=float(p.get("rhythm_phase_deg",0))
+        if not math.isfinite(phase) or isinstance(p.get("rhythm_phase_deg"),bool):raise ValueError()
+    except (ValueError,TypeError,OverflowError):raise ValueError("初始相位必须是有限数值") from None
+    if binding.get("time_offset_us",0) or binding.get("phase_deg",0):
+        raise ValueError("节律新模式请使用本路初始相位 rhythm_phase_deg")
+    frequency=(1000000*positive_time(duty/100,"占空比")/positive_time(p.get("rhythm_on_us",20),"Vin ON 时间")
+               if signal=="vin" else 1000*positive_time(p.get("rhythm_frequency_khz",25),"Vgate 频率"))
+    if square:
+        edges=edge_time_parameters(p)
+        if edges.get('rise_time_us',0)+edges.get('fall_time_us',0)>float(1000000/frequency)*duty/100+1e-9:
+            raise ValueError("上升时间与下降时间之和不能超过方波 ON 时间；请缩短边沿或增大 ON 时间/占空比")
+    result={k:v for k,v in binding.items() if k not in ("duration_us","frequency_hz","phase_deg","time_offset_us","parameters","component")}
+    result.update(mode=25 if square else 26,frequency_hz=float(frequency),phase_deg=phase,
+                  amplitude_v=binding.get("amplitude_v",.5),offset_v=binding.get("offset_v",.5),
+                  parameters={"duty_percent":duty} if square else {})
+    return result
+
+
 def make_waveform(catalog, binding):
     topology=int(binding["topology"]); mode=int(binding["mode"])
     entry,case=select_entry(catalog,topology,mode,binding.get("variant",0))
+    if mode in (27,28):
+        standard=rhythm_binding(binding)
+        window=float(positive_time(binding.get("duration_us",200),"节律观察时长"))
+        frequency=float(binding_frequency(standard));phase=binding_phase(standard,frequency)%1
+        duty=float(standard.get("parameters",{}).get("duty_percent",50))/100
+        edges=edge_time_parameters(binding.get('parameters',{}))
+        def value(t):
+            if t>=window:return 0
+            cycles=t*frequency/1e6+phase
+            return math.sin(2*math.pi*(cycles%1)) if standard["mode"]==26 else rhythm_square_value(
+                cycles,frequency,duty,edges.get('rise_time_us',0),edges.get('fall_time_us',0))
+        return Waveform(window,analytic=value),entry,case
     if mode in (25,26):
         parameters=binding.get("parameters",{})
         if set(parameters)-({"duty_percent"} if mode==25 else set()):
@@ -177,6 +259,7 @@ def make_waveform(catalog, binding):
              "gate_floor_v","gate_initial_v","gate_final_v","gate_baseline_v","levels_v"} | EXTRA_PARAMETERS
     unknown=set(parameters)-allowed
     if unknown: raise ValueError("Unknown template parameters: "+", ".join(sorted(unknown)))
+    actual_edges=edge_time_parameters(parameters)
     if any(not math.isfinite(float(v)) for k,v in parameters.items() if k!="levels_v"):
         raise ValueError("Template parameters must be finite")
     period=float(parameters.get("period_us",100 if mode==24 else PERIOD_US[mode]))
@@ -217,10 +300,31 @@ def make_waveform(catalog, binding):
     vin_peak=case["vin_range_v"][1]; gate_peak=case["gate_range_v"][1]
     identifier=case.get("source_experiment",case["experiment"]).lower()
     notes=["Reference timing is reconstructed from HTML text/plots; not original CSV."]
-    edge=float(parameters["rise_time_us"])*time_factor if "rise_time_us" in parameters else float(parameters.get("rise_us",.02))
-    fall=float(parameters["fall_time_us"])*time_factor if "fall_time_us" in parameters else float(parameters.get("fall_us",.02))
+    edge=float(parameters.get("rise_us",.02))
+    fall=float(parameters.get("fall_us",.02))
     if edge<0 or fall<0: raise ValueError("rise_us/fall_us must be nonnegative")
     points=[]
+
+    def transition(a,b,default,available):
+        if a==b:return 0
+        key="rise_time_us" if b>a else "fall_time_us"
+        duration=actual_edges[key]*time_factor if key in actual_edges else default
+        if duration>available+1e-9:
+            raise ValueError("上升/下降时间超过可用脉宽或分段时长；请缩短边沿或增大脉宽")
+        return duration
+
+    def pulse_edges(level,baseline,width):
+        incoming="rise_time_us" if level>baseline else "fall_time_us"
+        outgoing="fall_time_us" if level>baseline else "rise_time_us"
+        explicit_r=incoming in actual_edges or "rise_us" in parameters
+        explicit_f=outgoing in actual_edges or "fall_us" in parameters
+        r=actual_edges[incoming]*time_factor if incoming in actual_edges else edge if explicit_r else min(edge,width/2)
+        f=actual_edges[outgoing]*time_factor if outgoing in actual_edges else fall if explicit_f else min(fall,width/2)
+        if not explicit_r:r=min(r,max(0,width-f))
+        if not explicit_f:f=min(f,max(0,width-r))
+        if r+f>width+1e-9:
+            raise ValueError("上升时间与下降时间之和不能超过脉宽；请增大脉宽或缩短边沿")
+        return r,f
 
     def train(pulses, baseline=0.0):
         points[:]=[(0.0,baseline)]
@@ -228,10 +332,7 @@ def make_waveform(catalog, binding):
         for start,width,level in sorted(pulses):
             if width<=0 or start<end-1e-9: raise ValueError("脉宽必须大于 0，脉冲组不能重叠；请减小脉宽/间隔或分别选择 near/far")
             if start<0 or start+width>period+1e-9: raise ValueError("脉冲超出当前时窗：请缩短脉宽/间隔，或增大整组时窗时长")
-            r=edge if any(k in parameters for k in ("rise_us","rise_time_us")) else min(edge,width/2)
-            f=fall if any(k in parameters for k in ("fall_us","fall_time_us")) else min(fall,width/2)
-            if r+f>width+1e-9:
-                raise ValueError("上升时间与下降时间之和不能超过脉宽；请增大脉宽或缩短边沿")
+            r,f=pulse_edges(level,baseline,width)
             rise_end=start+r; fall_start=start+width-f
             if math.isclose(r+f,width,rel_tol=1e-12,abs_tol=1e-12): fall_start=rise_end
             points.extend([(start,baseline),(rise_end,level),(fall_start,level),(start+width,baseline)])
@@ -257,11 +358,13 @@ def make_waveform(catalog, binding):
         return (dc(1) if signal=="gate" else window(1,start,width)),entry,case
     def ramp(level,start,rise,width):
         start=float(parameters.get("start_us",start))
-        rise=float(parameters["rise_time_us"])*time_factor if "rise_time_us" in parameters else float(parameters.get("ramp_us",rise))
+        rise=float(parameters.get("ramp_us",rise))
         width=width_for(width)
+        rise=transition(0,level,rise,width)
+        ending=transition(level,0,fall,period-start-width)
         if rise<0 or rise>width: raise ValueError("ramp_us must be in 0..width_us")
         return Waveform(period,points=[(0,0),(start,0),(start+rise,level),
-            (start+width,level),(start+width+fall,0),(period,0)],notes=notes)
+            (start+width,level),(start+width+ending,0),(period,0)],notes=notes)
 
     if high==low==0: return dc(0),entry,case
 
@@ -378,8 +481,9 @@ def make_waveform(catalog, binding):
             if "gap_us" in parameters: raise ValueError("脉冲间隔与旧双脉冲间隔只能填写一个")
             second=start+width+float(parameters["pulse_gap_us"])*time_factor
         else:
-            if gap<fall: raise ValueError("gap_us is measured from the falling-edge start and must cover fall_us")
-            second=start+width-min(fall,width/2)+gap
+            _,ending=pulse_edges(vin_peak,0,width)
+            if gap<ending: raise ValueError("gap_us is measured from the falling-edge start and must cover fall_us")
+            second=start+width-ending+gap
         pulses=[(start,width,vin_peak),(second,width,vin_peak)]
         if component=="first" or (component=="pair" and "single1" in identifier): pulses=pulses[:1]
         elif component=="second" or (component=="pair" and "single2" in identifier): pulses=pulses[1:]
@@ -405,15 +509,23 @@ def make_waveform(catalog, binding):
             second=float(parameters["second_stage_us"])*time_factor if "second_stage_us" in parameters else (100 if mode==7 else 140)-default_duration
             width=duration+second
         if duration<0 or duration>width: raise ValueError("第一段时长不能超过当前通道脉宽；请增大脉宽或缩短第一段")
-        if mode!=7 and any(k in parameters for k in ("rise_us","rise_time_us")) and edge>duration:
+        if mode!=7 and "rise_us" in parameters and "rise_time_us" not in actual_edges and edge>duration:
             raise ValueError("上升时间不能超过第一段持续时间")
         if mode==5 and topology==7:
-            points=[(0,0),(start,0),(start+min(edge,duration),initial),(start+duration,initial),(start+duration,final)]
+            incoming=transition(0,initial,min(edge,duration),duration)
+            middle=transition(initial,final,0,width-duration)
+            points=[(0,0),(start,0),(start+incoming,initial),(start+duration,initial),(start+duration+middle,final)]
         elif mode==7:
-            points=[(0,0),(start,0),(start+duration,initial),(start+duration,final)]
+            incoming=transition(0,initial,duration,duration)
+            middle=transition(initial,final,0,width-duration)
+            points=[(0,0),(start,0),(start+incoming,initial)]
+            if incoming<duration:points.append((start+duration,initial))
+            points.append((start+duration+middle,final))
         else:
-            points=[(0,0),(start,0),(start+min(edge,duration),initial),(start+duration,final)]
-        points += [(start+width,final),(start+width+fall,0),(period,0)]
+            incoming=transition(0,initial,min(edge,duration),duration)
+            points=[(0,0),(start,0),(start+incoming,initial),(start+duration,final)]
+        ending=transition(final,0,fall,period-start-width)
+        points += [(start+width,final),(start+width+ending,0),(period,0)]
         return Waveform(period,points=points,notes=notes),entry,case
 
     if signal=="vin":

@@ -101,7 +101,7 @@ JSON 顶层包含 `dac_clock_hz`、`full_scale_v`、`zero_code_v`、`max_frequen
 | 字段 | 含义 |
 | --- | --- |
 | `vin_width_us` / `gate_width_us` | 各路实际脉宽，含边沿；覆盖旧共用 `width_us`。Gate 恒压或正弦时不使用 Gate 脉宽 |
-| `rise_time_us` / `fall_time_us` | 本路实际上升/下降时间；优先于旧参考坐标 `rise_us` / `fall_us`。显式脉冲边沿之和不能超过脉宽 |
+| `rise_time_us` / `fall_time_us` | 本路实际电压上升/下降时间，均为 0～1 μs，0 表示数字跳变；优先于旧参考坐标 `rise_us` / `fall_us`。负脉冲先下降、后上升；显式脉冲边沿之和不能超过脉宽 |
 | `pulse_gap_us` | 03/12/20/22 的实际基线等待时间；脉宽与间隔相加才是起始到起始周期 |
 | `vin_period_us` | 11/12 的实际 Vin 方波单周期时长；与旧周期/间隔字段互斥 |
 | `gate_frequency_khz` | 10/11 的实际 Vgate 正弦频率（kHz）；11 的旧 `gate_period_us` 仍可导入并换算 |

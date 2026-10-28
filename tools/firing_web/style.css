@@ -12,3 +12,4 @@
 .send-settings label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700}
 .send-settings input{width:135px;padding:8px;border:1px solid #bfd0dd;border-radius:7px}
 .send-settings p{margin:0;color:#63778b;font-size:12px}
+.config-actions{flex-wrap:wrap}

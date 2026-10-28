@@ -95,6 +95,12 @@ def zero_tail_length(wave,n,cycles,phase,scale,offset,zero):
 
 
 def compile_scene(config,catalog,_compact=False,_capacity_failures=None,_waveforms=None):
+    if any(b.get('enabled',True) and int(b.get('mode',0)) in (27,28) for b in config.get('channels',[])):
+        from rhythm_modulation import compile_rhythm_modes
+        return compile_rhythm_modes(config,catalog)
+    if 'rhythm_modulation' in config:
+        from rhythm_modulation import compile_rhythm_scene
+        return compile_rhythm_scene(config,catalog)
     if config.get("static_pulse"):
         from static_pulse import compile_static_pulse
         return compile_static_pulse(config,catalog)

@@ -4,7 +4,7 @@ import math
 
 from ad9106_firing import compile_scene, encode_words, voltage_code
 from basic_waveforms import FPGA_HZ, MIN_EVENT_TICKS, START_TICKS
-from firing_waveforms import Waveform
+from firing_waveforms import Waveform, edge_time_parameters
 
 MAX_TICKS=0xffffffff-3204  # Reserve the existing sequencer's COMMIT_LEAD addition.
 
@@ -49,16 +49,24 @@ def compile_static_pulse(config,catalog):
     duration=max(end for _,end in spans.values())
     clock=float(config.get('dac_clock_hz',148500000)); fs=float(config.get('full_scale_v',10)); zero=float(config.get('zero_code_v',0))
     if not all(math.isfinite(x) for x in (clock,fs,zero)) or clock<=0 or not 0<fs<=10: raise ValueError('无效的时钟或电压标定')
-    codes={}; levels={}
+    codes={}; levels={}; edges={}
     for b in bindings:
         amp=float(b.get('amplitude_v',1))
         if not math.isfinite(amp) or amp<0: raise ValueError('脉冲电压幅值必须为非负有限数值')
         levels[b['channel']]=amp+float(b.get('offset_v',0))
         codes[b['channel']]=voltage_code(levels[b['channel']],fs,zero)
+        requested=edge_time_parameters(b.get('parameters',{}))
+        rise=requested.get('rise_time_us',0);fall=requested.get('fall_time_us',0)
+        a,z=spans[b['channel']]
+        if rise+fall>z-a+1e-9:
+            raise ValueError('上升时间与下降时间之和不能超过脉宽；请增大脉宽或缩短边沿')
+        edges[b['channel']]=(fall,rise) if levels[b['channel']]<0 else (rise,fall)
     deadlines=sorted({START_TICKS+round(t*FPGA_HZ/1e6) for span in spans.values() for t in span})
     if deadlines[-1]>MAX_TICKS: raise ValueError('脉冲及包络总时长超出现有 FPGA 32 位定时范围（约 42.95 秒）')
-    if any(b-a<MIN_EVENT_TICKS for a,b in zip([0]+deadlines,deadlines)):
-        # Short complete shapes can still use SRAM; never stretch event gaps.
+    shaped=any(codes[ch]!=0 and any(edge>0 for edge in times) for ch,times in edges.items())
+    if shaped or any(b-a<MIN_EVENT_TICKS for a,b in zip([0]+deadlines,deadlines)):
+        # Nonzero edges need sampled ramps. Keep the event path for long, ideal
+        # pulses; never ignore requested slew or stretch short event gaps.
         synthetic=copy.deepcopy(config);synthetic.pop('static_pulse',None)
         waves={}; period=duration+.1
         for b in synthetic['channels']:
@@ -68,10 +76,16 @@ def compile_static_pulse(config,catalog):
                      parameters={'period_us':period})
             b.pop('frequency_hz',None);b.pop('phase_deg',None);b.pop('pair',None)
             sign=-1 if value<0 else 1
-            waves[b['channel']]=Waveform(period,points=[(0,0),(start,0),(start,sign),(end,sign),(end,0),(period,0)])
+            rising,falling=edges[b['channel']]
+            rise_end=start+rising;fall_start=end-falling
+            if math.isclose(rising+falling,end-start,rel_tol=1e-12,abs_tol=1e-12):fall_start=rise_end
+            waves[b['channel']]=Waveform(period,points=[(0,0),(start,0),(rise_end,sign),
+                (fall_start,sign),(end,0),(period,0)])
         try: plan=compile_scene(synthetic,catalog,_waveforms=waves)
         except ValueError as error:
-            raise ValueError('静态扫描的相邻切换不足 300 μs，且完整波形也无法放入 SRAM；请调整提前/延后时间或脉宽。'+str(error)) from None
+            reason=('静态扫描的非零上升/下降时间需要 SRAM 生成，当前完整脉冲或包络无法保留所设边沿；请缩短脉宽或包络。'
+                    if shaped else '静态扫描的相邻切换不足 300 μs，且完整波形也无法放入 SRAM；请调整提前/延后时间或脉宽。')
+            raise ValueError(reason+str(error)) from None
         words=[(a,0 if a in (0x2a,0x2b) else v) for a,v in plan['register_and_sram_writes']]
         packets,oracle=encode_words(words)
         plan.update(register_and_sram_writes=words,spi_oracle=oracle,packets=[p.hex(' ').upper() for p in packets],

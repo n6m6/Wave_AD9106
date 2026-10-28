@@ -74,6 +74,38 @@ class WebTests(unittest.TestCase):
         self.assertEqual(FakeSerial.sent[0].last[3],0x7f)
         self.assertEqual(len(FakeSerial.sent[0].last),24)
 
+    def test_rhythm_upload_save_and_retrigger(self):
+        config={'repeat_count':1,'interval_s':.01,'channels':[
+            dict(channel=1,topology=6,mode=27,signal='vin',pair='A',duration_us=200,amplitude_v=.5,offset_v=.5,
+                 parameters={'rhythm_on_us':20,'rhythm_duty_percent':50,'rhythm_phase_deg':0,'rise_time_us':.4,'fall_time_us':.6}),
+            dict(channel=2,topology=6,mode=27,signal='gate',pair='A',duration_us=200,amplitude_v=.5,offset_v=.5,
+                 parameters={'rhythm_frequency_khz':26,'rhythm_phase_deg':90})]}
+        config['repeat_count']=2
+        with tempfile.TemporaryDirectory() as directory:
+            server=DashboardServer(('127.0.0.1',0))
+            server.scene_path=Path(directory)/'scene.json'
+            server.plan_path=Path(directory)/'plan'
+            server.connected_port='COM9'
+            try:
+                with patch.dict(sys.modules,{'serial':types.SimpleNamespace(Serial=FakeSerial)}):
+                    job=server.start_send(config,'COM9')
+                    deadline=time.monotonic()+5
+                    while time.monotonic()<deadline and server.job['status']=='running':time.sleep(.01)
+                    self.assertEqual(server.job['status'],'complete')
+                    self.assertEqual(server.job['done'],job['total'])
+                    self.assertEqual([p.last[3] for p in FakeSerial.sent],[0x42,0x44])
+                    plan=json.loads((server.plan_path/'plan.json').read_text(encoding='utf-8'))
+                    self.assertEqual(plan['hardware_pattern_repeats'],1)
+                    self.assertEqual(plan['rhythm_modulation']['phase_drift_deg'],72)
+                    self.assertEqual(plan['rhythm_modulation']['initial_phase_difference_deg'],90)
+                    self.assertEqual((plan['channels'][0]['rise_time_us'],plan['channels'][0]['fall_time_us']),(.4,.6))
+                    self.assertGreater(len(set(plan['channels'][0]['samples'])),2)
+                    regs=dict(plan['register_and_sram_writes'])
+                    self.assertEqual((regs[0x2a],regs[0x2b]),(0,0))
+                    self.assertEqual(load_scene(server.scene_path),config)
+                    self.assertTrue((server.plan_path/'dac1.csv').exists())
+            finally:server.server_close()
+
     def test_http_dashboard_probe_upload_stop(self):
         opener=build_opener(ProxyHandler({}))
         with tempfile.TemporaryDirectory() as directory:
@@ -98,7 +130,7 @@ class WebTests(unittest.TestCase):
                     status,html=get("/"); self.assertEqual(status,200)
                     self.assertIn(b"channelEditors",html)
                     self.assertIn(b"schedulePreview",get("/app.js")[1])
-                    boot=json.loads(get("/api/bootstrap")[1]); self.assertEqual(len(boot["catalog"]["modes"]),104)
+                    boot=json.loads(get("/api/bootstrap")[1]); self.assertEqual(len(boot["catalog"]["modes"]),112)
                     self.assertEqual(len(boot["scene"]["channels"]),4)
                     self.assertEqual(json.loads(get("/api/ports")[1])["ports"][0]["device"],"COM9")
                     with self.assertRaises(HTTPError) as invalid:
@@ -113,12 +145,20 @@ class WebTests(unittest.TestCase):
                         post("/api/send",{"port":"COM9","scene":unsupported})
                     self.assertEqual(rejected.exception.code,400)
                     self.assertEqual(len(FakeSerial.sent),1) # Probe only, no upload/trigger.
+                    invalid_edges=json.loads(json.dumps(self.scene))
+                    invalid_edges["channels"][0]["parameters"]={"rise_time_us":1.01}
+                    with self.assertRaises(HTTPError) as rejected_edges:
+                        post("/api/send",{"port":"COM9","scene":invalid_edges})
+                    self.assertEqual(rejected_edges.exception.code,400)
+                    self.assertEqual(len(FakeSerial.sent),1)
                     with patch("firing_web.read_registers",return_value={"registers":{"0x1F":1},"finite_once":True}) as readback:
                         self.assertTrue(post("/api/registers",{"port":"COM9"})["finite_once"])
                         readback.assert_called_once_with("COM9")
                         with self.assertRaises(HTTPError):
                             post("/api/registers",{"port":"COM8"})
                         readback.assert_called_once()
+                    for channel in self.scene["channels"]:
+                        channel["parameters"]={"rise_time_us":.15,"fall_time_us":.15}
                     summary=post("/api/preview",{"scene":self.scene})
                     self.assertTrue(summary["ok"])
                     with self.assertRaises(HTTPError) as cross_origin:
@@ -142,6 +182,8 @@ class WebTests(unittest.TestCase):
                     saved=json.loads(server.scene_path.read_text(encoding="utf-8"))
                     self.assertEqual(saved["channels"][0]["duration_us"],20)
                     self.assertNotIn("frequency_hz",saved["channels"][0])
+                    self.assertEqual([c["parameters"] for c in saved["channels"]],
+                                     [{"rise_time_us":.15,"fall_time_us":.15}]*4)
                     self.assertEqual(post("/api/abort",{"port":"COM9"})["message"][:2],"四路")
                     self.assertEqual(FakeSerial.sent[-1].last[3],0x43)
             finally:

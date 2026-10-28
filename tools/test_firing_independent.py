@@ -36,7 +36,7 @@ class IndependentTests(unittest.TestCase):
             p=wave.points; scale=duration/wave.period_us
             self.assertAlmostEqual((p[2][0]-p[1][0])*scale,.2)
             self.assertAlmostEqual((p[4][0]-p[3][0])*scale,.3)
-            b['parameters']['rise_time_us']=4
+            b['parameters'].update(rise_time_us=.8,fall_time_us=.3,vin_width_us=1)
             with self.assertRaisesRegex(ValueError,'之和不能超过脉宽'):
                 make_waveform(CATALOG,b)
 
